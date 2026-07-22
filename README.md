@@ -39,6 +39,8 @@ public source license applies only to files contained in this repository.
 
 - `ui/actionscript/jury-rigging-menu` contains the CSF jury-rigging menu AS3,
   its earlier AS2 source, and the Adobe Animate FLA project.
+- `ui/actionscript/condition-widget` contains the Scaleform condition widget
+  AS3 classes and Adobe Animate FLA project.
 - `ui/actionscript/fallui-patches` contains the four menu scripts modified for
   CSF workbench buttons, repair navigation, and condition display integration.
 - `ui/prisma/views` contains the CSF-authored condition widget for

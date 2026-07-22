@@ -3,6 +3,12 @@
 This directory contains the source for ConditionSystemFramework's Scaleform
 and Prisma UI integrations. Compiled game assets are intentionally excluded.
 
+## Condition widget
+
+`actionscript/condition-widget` contains the Adobe Animate project and AS3
+classes for the Scaleform condition widget. Publishing `ConditionWidget.fla`
+produces `ConditionWidget.swf` for `Data/Interface`.
+
 ## Jury-rigging menu
 
 `actionscript/jury-rigging-menu` contains:
