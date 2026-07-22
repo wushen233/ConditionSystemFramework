@@ -108,7 +108,9 @@ Data/F4SE/Plugins/ConditionSystemFramework.dll
 
 ## License
 
-Original CSF source is released under the MIT License. Vendored Xbyak files
-remain under their original BSD-3-Clause license. Third-party portions and
-compatibility patch bases remain subject to their respective terms. See
-`THIRD_PARTY_NOTICES.md` for details.
+Original CSF source is released under the MIT License. Built binaries also
+contain `commonlib-shared` code distributed under GPL-3.0 with the CommonLib
+Modding Exception. Vendored Xbyak files remain under their original
+BSD-3-Clause license. Third-party portions and compatibility patch bases remain
+subject to their respective terms. See `THIRD_PARTY_NOTICES.md` and
+`licenses/commonlib-shared` for details.

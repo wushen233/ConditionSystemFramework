@@ -40,12 +40,29 @@ UI F4 for copying into consumer projects. Prisma UI F4 itself is not included.
 `src/IIF_API.h` is maintained by the same project author and is included so
 the optional ItemIntegrationFramework integration can be built independently.
 
+## CommonLibF4 and commonlib-shared
+
+This project is built against
+[Dear-Modding-FO4/commonlibf4](https://github.com/Dear-Modding-FO4/commonlibf4)
+at commit `ca31eeb6c7353555973bc351c6733d6492f2c66e`. CommonLibF4's top-level
+code is distributed under the MIT License.
+
+That revision statically links
+[Dear-Modding-FO4/commonlib-shared](https://github.com/Dear-Modding-FO4/commonlib-shared)
+at commit `f0b1670ee9caac2e349497f6f3c08a69633a8ea7`. `commonlib-shared` is
+distributed under GPL-3.0 with a Modding Exception. The exception permits
+Modded Code to link with `commonlib-shared` without causing that Modded Code to
+be covered by the GPL. Project-authored source in this repository therefore
+remains under the repository MIT License.
+
+Copies of the applicable GPL-3.0 text and Modding Exception are retained in
+`licenses/commonlib-shared/LICENSE` and `licenses/commonlib-shared/EXCEPTIONS`.
+
 ## Build dependencies
 
 The following projects are obtained separately by the build system and are not
 vendored in this repository:
 
-- CommonLibF4 by Dear Modding, MIT License.
 - Dear ImGui, MIT License.
 - Microsoft Detours, MIT License.
 - MinHook, 2-Clause BSD License.
