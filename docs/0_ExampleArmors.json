@@ -1,0 +1,95 @@
+{
+  "description": "护甲耐久配置示例 / Armor Durability Profile Example",
+  "profiles": [
+    // =========================================================================
+    // 示例：军用战斗护甲 / Example: Military Combat Armor
+    // =========================================================================
+    {
+      "name": "Combat Armor",
+      "priority": 90,
+      "maxDurability": 1200.0,     // 军用品质，高耐久 / Military-grade, high durability
+      "useFlatDegrade": false,      // 动态磨损：基于 DR/ER 抗性计算 / Dynamic wear: based on DR/ER
+      "degradeRate": 0.0,           // useFlatDegrade=false 时此字段无效 / Unused when useFlatDegrade=false
+      "keywords": [
+        ["ArmorTypeCombat"],
+        ["ArmorMaterialCombat"],
+        ["DLC03_ArmorTypeMarine"]   // 远港水手护甲也属于此类 / Far Harbor marine armor also fits here
+      ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：金属/合成材料硬质护甲 / Example: Hard Metal & Synth Armor
+    // =========================================================================
+    {
+      "name": "Hard Metal / Synth Armor",
+      "priority": 70,
+      "maxDurability": 900.0,
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "keywords": [
+        ["ArmorTypeMetal"],
+        ["ArmorTypeSynth"],
+        ["ArmorMaterialMetal"]
+      ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：掠夺者/皮革轻甲 / Example: Raider & Leather Light Armor
+    // =========================================================================
+    {
+      "name": "Raider / Leather Armor",
+      "priority": 50,
+      "maxDurability": 600.0,      // 废土拼凑，较低耐久 / Scavenged wasteland gear, lower durability
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "keywords": [
+        ["ArmorTypeRaider"],
+        ["ArmorTypeLeather"],
+        ["ArmorTypeSuperMutant"]
+      ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：服装与内衬 / Example: Clothing & Underarmor
+    // =========================================================================
+    {
+      "name": "Clothing / Underarmor",
+      "priority": 30,
+      "maxDurability": 300.0,      // 布料防护有限，耐久很低 / Cloth has limited durability
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "keywords": [
+        ["ClothingTypeOutfit"],
+        ["ClothingTypeUnderarmor"],
+        ["VaultSuitKeyword"]
+      ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：动力甲 —— 使用固定磨损模式 / Example: Power Armor — Flat Wear
+    // =========================================================================
+    {
+      "name": "Power Armor (Flat Degrade)",
+      "priority": 100,
+      "maxDurability": 2000.0,     // 最高耐久池 / The highest durability pool
+      // 使用固定磨损：每次命中扣除固定的 degradeRate 点
+      // Flat wear mode: each hit removes a fixed degradeRate points
+      "useFlatDegrade": true,
+      "degradeRate": 1.5,           // 每次命中扣除 1.5 点耐久 / Each hit removes 1.5 durability
+      "keywords": [ ["ArmorTypePower"] ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：防化服（脆弱）/ Example: Hazmat Suit (Fragile)
+    // =========================================================================
+    {
+      "name": "Hazmat Suit",
+      "priority": 95,
+      "maxDurability": 250.0,      // 橡胶材质容易破裂 / Rubber material tears easily
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "keywords": [ ["ArmorTypeHazmat"] ],
+      "formIDs": []
+    }
+  ]
+}

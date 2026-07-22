@@ -1,0 +1,19 @@
+{
+  "profiles": [
+    {
+      "name": "NeverBreak", // 例如“无尽”或“坚不可摧”风格词缀。 / For example, an Endless or Indestructible-style modifier.
+      // priority：多个 OMOD 冲突时，优先级高者生效。
+      // priority: higher priority wins when multiple OMODs conflict.
+      "priority": 100,
+      // degradeMult：最终磨损倍率。0.0 表示武器永不损耗状况。
+      // degradeMult: final wear multiplier. 0.0 means the weapon never loses condition.
+      // “劣质机匣”一类改造可以使用 1.5。
+      // A "poor receiver" style modifier could use 1.5.
+      "degradeMult": 0.0,
+      // immuneToJam：完全免疫卡壳。
+      // immuneToJam: prevents jams entirely.
+      "immuneToJam": true,
+      "formIDs": ["Fallout4.esm|1CC2AD"] 
+    }
+  ]
+}

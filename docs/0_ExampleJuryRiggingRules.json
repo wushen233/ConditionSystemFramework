@@ -1,0 +1,114 @@
+{
+  "description": "混修（急造修理）规则配置示例 / Jury-Rigging Rule Example",
+  "JuryRiggingRules": [
+    // =========================================================================
+    // 示例：实弹武器跨种类混修（枪械迷 Rank 4）/ Cross-Type: Ballistic (Gun Nut 4)
+    // =========================================================================
+    {
+      "RuleName": "Ballistic Cross-Type (Gun Nut 4)",
+      // TargetKeywords: 目标物品和材料物品都必须匹配这些大类标签
+      // TargetKeywords: both target and material must match these broad category tags
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper",
+        "WeaponTypeShotgun", "WeaponTypeHeavyGun"
+      ],
+      // MatchCategories: 留空 = 大类内可跨种类互修（手枪修步枪等）
+      // MatchCategories: empty = cross-type repair allowed within the broad category
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,  // 100% 转化效率 / 100% conversion efficiency
+      "MaxConditionCap": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm",
+        "FormID": "0x0004A0DA", "MinRank": 4  // 枪械迷 Rank 4 / Gun Nut Rank 4
+      }
+    },
+    // =========================================================================
+    // 示例：实弹武器同种类混修（枪械迷 Rank 1）/ Same-Type: Ballistic (Gun Nut 1)
+    // =========================================================================
+    {
+      "RuleName": "Ballistic Same-Type (Gun Nut 1)",
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeShotgun"
+      ],
+      // MatchCategories 有值 = 启用分类锁，两件武器必须共享同个精确标签
+      // MatchCategories populated = category lock: both items must share an exact tag
+      "MatchCategories": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeShotgun"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "MaxConditionCap": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm",
+        "FormID": "0x0004A0DA", "MinRank": 1
+      }
+    },
+    // =========================================================================
+    // 示例：能量武器跨种类混修（科学 Rank 4）/ Energy Cross-Type (Science! 4)
+    // =========================================================================
+    {
+      "RuleName": "Energy Cross-Type (Science! 4)",
+      "TargetKeywords": [
+        "WeaponTypeLaser", "WeaponTypePlasma", "WeaponTypeGaussRifle"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 0.9,  // 能量武器转化效率较低 / Energy weapons: 90% efficiency
+      "MaxConditionCap": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm",
+        "FormID": "0x000264D9", "MinRank": 4  // 科学! Science! Rank 4
+      }
+    },
+    // =========================================================================
+    // 示例：护甲通用混修（装甲商 Rank 4）/ Universal Armor (Armorer 4)
+    // =========================================================================
+    {
+      "RuleName": "Armor Universal (Armorer 4)",
+      // IS_ARMOR 是内建虚拟关键词，匹配所有护甲
+      // IS_ARMOR is a built-in virtual keyword that matches all armor
+      "TargetKeywords": ["IS_ARMOR"],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "MaxConditionCap": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm",
+        "FormID": "0x0004B254", "MinRank": 4  // 装甲商 Armorer Rank 4
+      }
+    },
+    // =========================================================================
+    // 示例：护甲同材料混修（装甲商 Rank 1）/ Same-Material Armor (Armorer 1)
+    // =========================================================================
+    {
+      "RuleName": "Armor Same-Material (Armorer 1)",
+      "TargetKeywords": ["IS_ARMOR"],
+      // 两件护甲必须共享以下材质标签之一
+      // Both armor pieces must share one of these material tags
+      "MatchCategories": [
+        "ArmorTypeLeather", "ArmorTypeMetal", "ArmorTypeCombat",
+        "ArmorTypeRaider", "ArmorTypeSynth", "ArmorTypePower",
+        "ClothingTypeOutfit"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "MaxConditionCap": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm",
+        "FormID": "0x0004B254", "MinRank": 1
+      }
+    },
+    // =========================================================================
+    // 示例：近战武器跨类型（铁匠 Rank 3）/ Melee Cross-Type (Blacksmith 3)
+    // =========================================================================
+    {
+      "RuleName": "Melee Cross-Type (Blacksmith 3)",
+      "TargetKeywords": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "MaxConditionCap": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm",
+        "FormID": "0x0004B253", "MinRank": 3  // 铁匠 Blacksmith Rank 3
+      }
+    }
+  ]
+}

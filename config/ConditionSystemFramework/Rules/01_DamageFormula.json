@@ -1,0 +1,24 @@
+{
+    "DamageFormula": {
+        "enabled": true,
+        
+        "baseHardness": 1.0,
+        "glanceThreshold": 0.3,
+        "glanceMultiplier": 0.1,
+        "scratchThreshold": 0.7,
+        "scratchMultiplier": 0.4,
+        "durabilityDamageConstant": 0.15,
+        
+        // 按伤害类型动态转换硬度。
+        // Dynamic hardness conversion by damage type.
+        "ratingMultipliers": {
+            "default": 0.2,                // 默认值，通常用于物理子弹：DR * 0.2。 / Default, usually physical bullets: DR * 0.2.
+            
+            "DamageTypeEnergy": 0.1,       // 能量武器穿透力强：ER * 0.1。 / Energy weapons penetrate well: ER * 0.1.
+            "DamageTypeFire": 0.05,        // 火焰几乎不受结构硬度阻挡：FireResist * 0.05。 / Fire gives armor little structural hardness: FireResist * 0.05.
+            "DamageTypeCryo": 0.3,         // 冰冻缺乏物理冲击，更容易被护甲吸收。 / Cryo has less physical impact and is easier for armor to absorb.
+            "DamageTypePoison": 0.0,       // 毒素直接腐蚀，弹道硬度无效。 / Poison corrodes directly; ballistic hardness does not help.
+            "DamageTypeRadiation": 0.0     // 辐射不会被物理硬度阻挡。 / Radiation is not blocked by physical hardness.
+        }
+    }
+}

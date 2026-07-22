@@ -1,0 +1,65 @@
+{
+  "description": "修饰器（传奇词缀）配置示例 / Modifier (Legendary Effect) Profile Example",
+  "profiles": [
+    // =========================================================================
+    // 示例：永不磨损 / Example: Never Break (Indestructible)
+    // =========================================================================
+    {
+      "name": "Never Break",
+      // 优先级：多个传奇词缀冲突时高者胜
+      // Priority: higher wins when multiple legendary effects would apply
+      "priority": 100,
+      // 磨损倍率：0.0 = 永不损耗
+      // Wear multiplier: 0.0 = weapon never degrades
+      "degradeMult": 0.0,
+      // 免疫卡壳
+      // Immune to jamming
+      "immuneToJam": true,
+      // 原版传奇词缀"永不磨损"的 FormID / Vanilla "Never Break" legendary FormID
+      "formIDs": ["Fallout4.esm|1CC2AD"],
+      "keywords": []
+    },
+    // =========================================================================
+    // 示例：加速磨损（劣质改造）/ Example: Increased Wear (Shoddy Mod)
+    // =========================================================================
+    {
+      "name": "Increased Wear",
+      "priority": 50,
+      // 磨损加快 50%
+      // 50% faster wear
+      "degradeMult": 1.5,
+      "immuneToJam": false,
+      "formIDs": [],
+      // 通过关键词匹配所有带此标签的修饰器
+      // Match all modifiers with this keyword
+      "keywords": [ ["csf_IncreasedWear"] ]
+    },
+    // =========================================================================
+    // 示例：精准部件（降低磨损 + 不能卡壳）/ Example: Precision Parts (Reduced Wear + No Jam)
+    // =========================================================================
+    {
+      "name": "Precision Parts",
+      "priority": 60,
+      // 磨损降低为 80%
+      // Wear reduced to 80% of normal
+      "degradeMult": 0.8,
+      // 不会卡壳 / Will not jam
+      "immuneToJam": true,
+      "formIDs": [],
+      "keywords": [ ["csf_PrecisionParts"], ["ReceiverPrecision"] ]
+    },
+    // =========================================================================
+    // 示例：关键词组匹配 / Example: AND-Group Keyword Matching
+    // =========================================================================
+    {
+      "name": "Sturdy Receiver (AND-group example)",
+      "priority": 50,
+      "degradeMult": 0.9,
+      "immuneToJam": false,
+      "formIDs": [],
+      // 同组内 AND：必须同时拥有两个关键词才匹配
+      // Same group AND: must have BOTH keywords to match
+      "keywords": [ ["SturdyWeapon", "ModifierReceiver"] ]
+    }
+  ]
+}

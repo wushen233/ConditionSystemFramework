@@ -1,0 +1,142 @@
+{
+  "profiles": [
+    // =========================================================================
+    // 杂项（kMISC）类型修理工具  /  MISC-Type Repair Kits
+    // =========================================================================
+    // 以下示例展示如何将非辅助品类型的物品配置为修理工具。
+    // The following examples show how to configure non-aid items as repair kits.
+    //
+    // 自 v1.0.0 起，ConditionSystemFramework 通过 EquipObject 钩子支持
+    // 点击杂项（kMISC）、垃圾（同为 kMISC + 组件数据）等不可装备物品时，
+    // 直接触发修理逻辑，取代原版的 "无法装备" 提示。
+    // As of v1.0.0, CSF hooks ActorEquipManager::EquipObject to intercept
+    // clicks on un-equippable items (kMISC, junk, etc.) that have a repair kit
+    // profile — performing the repair instead of showing "cannot equip".
+    //
+    // 使用步骤 / Usage steps:
+    //   1. 在 ESP/ESL 中创建一个 Misc 类物品（不是 Aid 类）
+    //      Create a MISC item in your ESP/ESL (NOT an Aid item)
+    //   2. 在此 JSON 中配置它的 FormID
+    //      Configure its FormID in this JSON file
+    //   3. 在游戏中点击该物品 → 自动修理已装备的武器/护甲
+    //      Click the item in-game → auto-repairs equipped weapons/armor
+    // =========================================================================
+    {
+      // 示例：扳手（杂项）/ Example: Wrench (MISC)
+      // 轻量武器修理 — 此物品在 ESP 中为 kMISC 类型
+      // Light weapon repair — defined as kMISC in the ESP
+      // 在 Pip-Boy 中点击即可使用 / Click it in the Pip-Boy to use
+      "name": "Wrench (MISC Example)",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F0B" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": false,
+      "baseRepairPercent": 0.15,
+      "maxConditionLimit": 1.0
+    },
+    {
+      // 示例：废金属（垃圾）/ Example: Scrap Metal (JUNK)
+      // 万用修理材料 — 此物品在 ESP 中为 kMISC 类型（带 ComponentData 的垃圾）
+      // Universal repair material — defined as kMISC with ComponentData
+      // 修理效果较低，适合用作基础修复材料
+      // Low repair value, suitable as basic patch-up material
+      "name": "Scrap Metal (JUNK Example)",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F0C" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.08,
+      "maxConditionLimit": 1.0
+    },
+    // =========================================================================
+    // 加载顺序  /  Load Order
+    // =========================================================================
+    // 多个修理包 JSON 文件按文件名字典序加载。相同 FormID 的重复配置会追加，
+    // 匹配时取第一个匹配项。
+    // Multiple RepairKits JSON files are loaded in filename lexicographic order.
+    // Duplicate FormIDs across files are appended; the first match wins.
+    //
+    // 建议使用数字前缀控制加载顺序 / Recommended prefix scheme:
+    //   0_DefaultKits.json   -> 核心配置 / Core configs
+    //   1_MyCustomKits.json  -> 自定义扩展 / Custom extensions
+    //   2_AnotherMod.json    -> 第三方兼容 / Third-party compatibility
+    // =========================================================================
+
+    // =========================================================================
+    // 关键词匹配  /  Keyword Matching
+    // =========================================================================
+    // 除了通过 formIDs 精确匹配，还可以用 keywords 字段通过关键词匹配。
+    // In addition to exact formID matching, you can use the "keywords" field.
+    //
+    // 关键词匹配的优势 / Advantages:
+    //   - 不需要知道具体 FormID，自动兼容其他 Mod 添加的同关键词物品
+    //     No need for specific FormIDs — auto-compatible with mods that
+    //     add the same keyword to their items
+    //   - 一个配置可以匹配多个物品
+    //     One profile can match many items
+    //   - 第三方 Mod 只需在物品上添加关键词，无需修改本配置文件
+    //     Third-party mods only need to add a keyword to their items
+    //
+    // 注意：RepairKitProfile 的关键词是扁平数组（OR 逻辑），
+    // 只要物品拥有数组中任意一个关键词即匹配成功。
+    // Note: keywords is a flat array (OR logic) — matching any single
+    // keyword in the array is sufficient.
+    // =========================================================================
+    {
+      // 示例：通过关键词匹配 / Example: Keyword-based matching
+      // 所有带 csf_RepairKit 关键词的物品都会成为修理工具
+      // Any item with the csf_RepairKit keyword becomes a repair kit
+      // 你只需在 ESP 中给目标物品添加 csf_RepairKit 关键词即可
+      // Just add csf_RepairKit to your items in the ESP
+      "name": "Universal Keyword Repairs",
+      "keywords": [ "csf_RepairKit" ],
+      "canRepairWeapon": true,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.20,
+      "maxConditionLimit": 1.0
+    },
+    // =========================================================================
+    // canOverRepair 快捷设置  /  canOverRepair Shorthand
+    // =========================================================================
+    // 如果只希望启用过修（修复上限超过 100%），
+    // 可以用 canOverRepair: true 替代手动设置 maxConditionLimit: 2.0。
+    // To enable over-repair (limit above 100%) without writing maxConditionLimit
+    // explicitly, use canOverRepair: true.
+    //
+    // canOverRepair: true   -> maxConditionLimit: 2.0 (200%)
+    // canOverRepair: false  -> maxConditionLimit: 1.0 (100%)
+    //
+    // 显式指定 maxConditionLimit 会覆盖 canOverRepair 的默认值。
+    // Explicitly setting maxConditionLimit overrides the canOverRepair default.
+    // =========================================================================
+    {
+      "name": "Over-Repair Kit (shorthand demo)",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F0D" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.30,
+      "canOverRepair": true
+      // maxConditionLimit 未指定，因 canOverRepair: true 自动设为 2.0
+      // maxConditionLimit is omitted — canOverRepair: true sets it to 2.0
+    },
+    // =========================================================================
+    // 高额修理 + 定点过修限制  /  High Repair + Custom Max Limit
+    // =========================================================================
+    {
+      "name": "Precision Repair Tool",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F0E" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.50,
+      // 过修上限 150%，不依赖 canOverRepair 的 2.0 默认值
+      // Over-repair capped at 150%, independent of canOverRepair's 2.0 default
+      "maxConditionLimit": 1.50
+    }
+  ]
+}

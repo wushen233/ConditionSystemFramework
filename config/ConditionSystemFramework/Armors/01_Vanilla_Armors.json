@@ -1,0 +1,75 @@
+{
+    // 护甲耐久 profile。按伤害类型的差异由全局 Rules/01_DamageFormula.json 的 ratingMultipliers 统一处理；
+    // 早期的 "damageResponses" 字段已废弃（C++ 代码不再读取），故此处已移除。
+    // Armor durability profiles. Per-damage-type behavior is handled globally by
+    // Rules/01_DamageFormula.json (ratingMultipliers); the legacy "damageResponses"
+    // field is deprecated (no longer read by the C++ code) and has been removed.
+    "profiles": [
+        {
+            "name": "Military_Combat_Armor",
+            "priority": 90,
+            "maxDurability": 1200.0,
+            "useFlatDegrade": false,  // 使用原生 DR/ER 抗性动态计算磨损。 / Uses native DR/ER resistances for dynamic wear.
+            "degradeRate": 0.0,
+            "keywords": [
+                [ "ArmorTypeCombat" ],
+                [ "ArmorMaterialCombat" ],
+                [ "DLC03_ArmorTypeMarine" ]
+            ]
+        },
+        {
+            "name": "Hard_Metal_Synth_Armor",
+            "priority": 70,
+            "maxDurability": 900.0,
+            "useFlatDegrade": false,
+            "degradeRate": 0.0,
+            "keywords": [
+                [ "ArmorTypeMetal" ],
+                [ "ArmorMaterialMetal" ],
+                [ "ArmorTypeSynth" ],
+                [ "ArmorMaterialSynth" ],
+                [ "DLC01ArmorTypeRobot" ]
+            ]
+        },
+        {
+            "name": "Scrap_Raider_Leather_Armor",
+            "priority": 50,
+            "maxDurability": 600.0,
+            "useFlatDegrade": false,
+            "degradeRate": 0.0,
+            "keywords": [
+                [ "ArmorTypeRaider" ],
+                [ "ArmorMaterialRaider" ],
+                [ "ArmorTypeLeather" ],
+                [ "ArmorMaterialLeather" ],
+                [ "ArmorTypeSuperMutant" ],
+                [ "ArmorTypeDog" ]
+            ]
+        },
+        {
+            "name": "Standard_Clothing_Underarmor",
+            "priority": 30,
+            "maxDurability": 300.0,
+            "useFlatDegrade": false,
+            "degradeRate": 0.0,
+            "keywords": [
+                [ "ClothingTypeOutfit" ],
+                [ "ClothingTypeUnderarmor" ],
+                [ "VaultSuitKeyword" ],
+                [ "ArmorTypeDCGuard" ]
+            ]
+        },
+        {
+            "name": "Hats_And_Accessories",
+            "priority": 10,
+            "maxDurability": 150.0,
+            "useFlatDegrade": false,
+            "degradeRate": 0.0,
+            "keywords": [
+                [ "ClothingTypeHat" ],
+                [ "ClothingTypeEyewear" ],
+                [ "ClothingTypeMask" ]
+            ]
+        }
+    ]
+}

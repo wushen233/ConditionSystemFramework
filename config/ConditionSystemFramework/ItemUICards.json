@@ -1,0 +1,11 @@
+{
+  "ItemUICards": {
+    "CND": {
+      "priority": 0,
+      "anchorTarget": "$ammo",
+      "anchorMode": "after",
+      "fallbackAnchorTarget": "TOP",
+      "fallbackAnchorMode": "after"
+    }
+  }
+}

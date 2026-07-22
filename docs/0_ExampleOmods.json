@@ -1,0 +1,128 @@
+{
+  "description": "改装件（OMOD）配置示例 / OMOD (Attachment Modification) Profile Example",
+  "profiles": [
+    // =========================================================================
+    // 示例：重型枪管 / Example: Heavy Barrel
+    // =========================================================================
+    {
+      "name": "Heavy Barrel",
+      "priority": 40,
+      "degradeMult": 0.8,           // 磨损倍率(累乘)：厚实枪管磨损更慢 / Thick barrel wears slower
+      "degradeRateFlat": 0.0,       // 无额外固定磨损 / No extra flat wear per shot
+      "maxDurabilityMult": 1.3,     // 最大耐久倍率(累乘)：提高 30% / Increases max durability by 30%
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["BarrelHeavy"] ]
+    },
+    // =========================================================================
+    // 示例：短枪管 / Example: Short Barrel
+    // =========================================================================
+    {
+      "name": "Short Barrel",
+      "priority": 40,
+      "degradeMult": 0.95,          // 稍慢磨损 / Slightly slower wear
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.85,    // 最大耐久降低 15% / Reduces max durability by 15%
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["BarrelShort"] ]
+    },
+    // =========================================================================
+    // 示例：消音器 / Example: Suppressor
+    // =========================================================================
+    {
+      "name": "Suppressor",
+      "priority": 60,
+      "degradeMult": 1.25,          // 消音器导致磨损加快 25% / Suppressor increases wear 25%
+      "degradeRateFlat": 0.5,       // 每次射击额外固定磨损 +0.5 / Extra flat wear +0.5 per shot
+      "maxDurabilityMult": 0.9,     // 最大耐久降低 10% / Reduces max durability 10%
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["Muzzle_Silencer"] ]
+    },
+    // =========================================================================
+    // 示例：制退器 / Example: Compensator
+    // =========================================================================
+    {
+      "name": "Compensator",
+      "priority": 60,
+      "degradeMult": 1.15,
+      "degradeRateFlat": 0.3,
+      "maxDurabilityMult": 0.95,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["Muzzle_Break"] ]
+    },
+    // =========================================================================
+    // 示例：重型枪托 / Example: Heavy Stock
+    // =========================================================================
+    {
+      "name": "Heavy Stock",
+      "priority": 30,
+      "degradeMult": 0.85,          // 减少 15% 磨损 / Reduces wear by 15%
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.15,    // 增加 15% 最大耐久 / Increases max durability by 15%
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["StockHeavy"] ]
+    },
+    // =========================================================================
+    // 示例：自动机锤 / Example: Auto Hammer
+    // =========================================================================
+    {
+      "name": "Auto Hammer",
+      "priority": 70,
+      "degradeMult": 1.4,           // 磨损加快 40% / Wear increases 40%
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.85,    // 最大耐久降低 15% / Max durability drops 15%
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["AutoHammer"] ]
+    },
+    // =========================================================================
+    // 示例：两个关键词同时匹配（AND 逻辑）/ Example: Two Keywords (AND)
+    // =========================================================================
+    {
+      "name": "Powerful + Automatic (AND-group)",
+      "priority": 50,
+      "degradeMult": 1.2,           // 大威力 + 自动，磨损加剧 / Powerful + automatic, increased wear
+      "degradeRateFlat": 0.5,
+      "maxDurabilityMult": 0.95,
+      "immuneToJam": false,
+      "formIDs": [],
+      // 两个关键词必须同时存在才匹配 / Both keywords must be present
+      "keywords": [ ["ReceiverPowerful", "Receiver_Automatic"] ]
+    },
+    // =========================================================================
+    // 示例：动力甲伺服电机（降低磨损）/ Example: Power Armor Servo (Reduced Wear)
+    // =========================================================================
+    {
+      "name": "Power Armor Servo",
+      "priority": 100,
+      "degradeMult": 0.7,           // 降低 30% 磨损 / Reduces wear by 30%
+      "degradeRateFlat": -0.3,      // 负值 = 每次射击减少磨损 / Negative = reduces wear per shot
+      "maxDurabilityMult": 1.0,
+      "immuneToJam": false,
+      "formIDs": [],
+      // 多个关键词组（OR）：匹配任一组即可 / Multiple keyword groups (OR): match any one
+      "keywords": [
+        ["ma_Servo_Rank1"],
+        ["ma_Servo_Rank2"],
+        ["ma_Servo_Rank3"]
+      ]
+    },
+    // =========================================================================
+    // 示例：减轻重量（但降低耐久）/ Example: Lightweight (+) / Less Durable (-)
+    // =========================================================================
+    {
+      "name": "Lightweight Frame",
+      "priority": 20,
+      "degradeMult": 1.1,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.7,     // 轻量化构架，耐久降低 30% / Lightweight frame, durability -30%
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [ ["ma_Frame_Light"], ["Frame_Lightweight"] ]
+    }
+  ]
+}

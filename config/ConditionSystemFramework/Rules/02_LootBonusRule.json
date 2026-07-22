@@ -1,0 +1,41 @@
+{
+  "LootBonusRule": {
+    "Enabled": true,
+    // RequiredAV：辐射 4 原版“幸运”Actor Value (Luck [AVIF:000002C8])。
+    // RequiredAV: Fallout 4's vanilla Luck actor value (Luck [AVIF:000002C8]).
+    // 注意：旧值 0x000002CB 实为 AttackConditionAlt2（默认值 100），
+    // 会导致 GetActorValue 对所有人返回 ~100，从而无视真实幸运值、永远命中最高档。
+    // Note: the old 0x000002CB was AttackConditionAlt2 (defaults to 100), which made
+    // GetActorValue return ~100 for everyone, ignoring real Luck and always hitting the top tier.
+    "RequiredAV": {"Plugin": "Fallout4.esm", "FormID": "0x000002C8"},
+    // GlobalCap：奖励状况的全局上限不会超过 200% (2.0)。
+    // GlobalCap: maximum bonus condition cannot exceed 200% (2.0).
+    "GlobalCap": 2.00,
+    "Tiers": [
+      // 阶段 1：幸运 >= 5 时生效。
+      // Tier 1: active when Luck >= 5.
+      {
+        "MinAVLevel" :  5.0,
+        "HitChance"  :  2.0,   // 2% 触发几率。 / 2% chance to trigger.
+        "BonusMinPct":  0.05,  // 触发后，状况从 105% / If triggered, condition rolls from 105%
+        "BonusMaxPct":  0.15   // 到 115% 之间随机。 / to 115%.
+      },
+      // 阶段 2：幸运 >= 8 时生效，并覆盖上一阶段。
+      // Tier 2: active when Luck >= 8, overriding the previous tier.
+      {
+        "MinAVLevel" :  8.0,
+        "HitChance"  :  5.0,   // 5% 触发几率。 / 5% chance to trigger.
+        "BonusMinPct":  0.15,
+        "BonusMaxPct":  0.30
+      },
+      // 阶段 3：幸运 >= 10 时生效。
+      // Tier 3: active when Luck >= 10.
+      {
+        "MinAVLevel" : 10.0,
+        "HitChance"  : 10.0,   // 10% 触发几率。 / 10% chance to trigger.
+        "BonusMinPct":  0.30,  // 触发后，状况至少 130% / If triggered, condition is at least 130%
+        "BonusMaxPct":  0.50   // 最高可到 150%。 / and can reach 150%.
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+/.deps/
+/.xmake/
+/build/
+/vsxmake2022/
+xmake-requires.lock
+*.dll
+*.exp
+*.ilk
+*.lib
+*.log
+*.obj
+*.pdb
+*.user

@@ -1,0 +1,31 @@
+{
+    "rules": [
+        {
+            "name": "Full Exclusions (Unplayable Items, Rings, etc.)",
+            // 带有这些关键词或 FormID 的物品会被强制排除。
+            // Items with these keywords or form IDs are forcibly excluded.
+            "keywords": [
+                "Unplayable",
+                "ArmorTypePipBoy",
+                "NonPlayable"
+            ],
+            "formIDs": [
+                "Fallout4.esm|021B3B", // 哔哔小子等绝不能损坏的剧情关键物品。 / Pip-Boy and other quest-critical items that must never break.
+                "Fallout4.esm|08925C",
+                "Fallout4.esm|07C70C",
+                "Fallout4.esm|064B87", // 飞鸟旋转机枪（玩家搭乘版）/ Vertibird mounted minigun (player ride version)
+                "Fallout4.esm|1299A6"  // 飞鸟旋转机枪（NPC版）/ Vertibird mounted minigun (NPC version)
+            ],
+            "enableDurabilitySystem": false, // 不计算耐久损耗。 / Do not calculate durability loss.
+            "showDurabilityUI": false        // 在 UI 面板中隐藏状况条。 / Hide the condition bar in UI panels.
+        },
+        {
+            "name": "Power Armor: Display Condition Only",
+            // 辐射 4 原版已经有动力甲部件损坏系统。
+            // Fallout 4 already has a vanilla damage system for power armor parts.
+            "keywords": ["ArmorTypePower"],
+            "enableDurabilitySystem": false, // 不应用本系统的耐久伤害，避免与原版冲突。 / Avoid conflicts by not applying this system's durability damage.
+            "showDurabilityUI": true         // 仍允许物品栏 UI 显示其状况。 / Still allow inventory UI to show its condition.
+        }
+    ]
+}

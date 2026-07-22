@@ -1,0 +1,82 @@
+{
+  "description": "武器耐久配置示例 / Weapon Durability Profile Example",
+  "profiles": [
+    // =========================================================================
+    // 示例：铁管武器 / Example: Pipe Weapons
+    // =========================================================================
+    {
+      "name": "Pipe Weapons",
+      // 优先级最高，因为铁管武器也带有手枪/步枪标签
+      // Highest priority because pipe weapons also carry pistol/rifle keywords
+      "priority": 100,
+      "maxDurability": 400.0,  // 废土自制武器极易损坏 / Wasteland-built weapons break easily
+      "degradeRate": 2.0,       // 每次射击磨损倍率 / Wear multiplier per shot
+      "canJam": true,           // 铁管武器容易卡壳 / Pipe weapons jam easily
+      "keywords": [ ["dn_weap_Pipe"] ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：狙击步枪 / Example: Sniper Rifles
+    // =========================================================================
+    {
+      "name": "Sniper Rifles",
+      "priority": 90,
+      "maxDurability": 600.0,
+      "degradeRate": 4.0,       // 大威力射击造成严重枪管磨损 / High-powered shots cause heavy barrel wear
+      "canJam": true,
+      "keywords": [ ["WeaponTypeSniper"] ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：能量武器 / Example: Energy Weapons
+    // =========================================================================
+    // 能量武器的特点：中等耐久，较高磨损，可能卡壳（模拟过热/电容短路）
+    // Energy weapons: medium durability, higher wear, can jam (overheat/capacitor shorts)
+    {
+      "name": "Energy Weapons",
+      "priority": 60,
+      "maxDurability": 1000.0,
+      "degradeRate": 2.5,
+      "canJam": true,
+      // 多个关键词组（OR）/ Multiple keyword groups (OR)
+      // 满足任一组即匹配该配置 / Matching any group activates this profile
+      "keywords": [
+        ["WeaponTypeLaser"],
+        ["WeaponTypePlasma"],
+        ["WeaponTypeGaussRifle"],
+        ["WeaponTypeCryolater"]
+      ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：近战武器（不会卡壳）/ Example: Melee Weapons (cannot jam)
+    // =========================================================================
+    {
+      "name": "Melee and Unarmed",
+      "priority": 20,
+      "maxDurability": 1000.0,
+      "degradeRate": 2.0,
+      "canJam": false,            // 近战武器不会卡壳 / Melee weapons cannot jam
+      "keywords": [
+        ["WeaponTypeMelee1H"],
+        ["WeaponTypeMelee2H"],
+        ["WeaponTypeUnarmed"]
+      ],
+      "formIDs": []
+    },
+    // =========================================================================
+    // 示例：兜底默认规则 / Example: Fallback Default Profile
+    // =========================================================================
+    // 未匹配任何更具体配置的武器会使用此兜底规则
+    // Weapons not matching any more specific profile fall back to this catch-all
+    {
+      "name": "Fallback Default",
+      "priority": 0,
+      "maxDurability": 1000.0,
+      "degradeRate": 1.0,
+      "canJam": true,
+      "keywords": [ ["WeaponTypeBallistic"] ],
+      "formIDs": []
+    }
+  ]
+}

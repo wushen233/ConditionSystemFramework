@@ -1,0 +1,42 @@
+{
+  "description": "伤害公式配置示例 / Damage Formula Configuration Example",
+  "DamageFormula": {
+    // 总开关 / Master enable switch
+    "enabled": true,
+
+    // 基础硬度：护甲抵抗耐久伤害的基准值
+    // Base hardness: baseline armor resistance to durability damage
+    "baseHardness": 1.0,
+
+    // 擦伤门槛：低于此缩放伤害比率的攻击仅造成擦伤级耐久伤害
+    // Glance threshold: attacks below this damage ratio scale only deal glance damage
+    "glanceThreshold": 0.3,
+    // 擦伤倍率：擦伤攻击仅造成此倍率的耐久伤害
+    // Glance multiplier: glance attacks only deal this fraction of durability damage
+    "glanceMultiplier": 0.1,
+
+    // 刮擦门槛 / Scratch threshold
+    "scratchThreshold": 0.7,
+    // 刮擦倍率 / Scratch multiplier
+    "scratchMultiplier": 0.4,
+
+    // 耐久伤害常数：每次命中护甲最低造成的耐久伤害（抗性×此系数）
+    // Durability damage constant: minimum durability damage multiplier per hit (resistance × this)
+    "durabilityDamageConstant": 0.15,
+
+    // =====================================================================
+    // ⚠️ ratingMultipliers 是预留字段，C++ 代码当前尚未解析此字段
+    //    ratingMultipliers is a reserved field — not yet parsed by the C++ code
+    //    此处的值是参考/说明性的，将来可能会实现
+    //    The values here are illustrative/future reference
+    // =====================================================================
+    "ratingMultipliers": {
+      "default": 0.2,                // 默认值（物理子弹）：DR × 0.2 / Default (physical): DR × 0.2
+      "DamageTypeEnergy": 0.1,       // 能量穿透强：ER × 0.1 / Energy penetrates: ER × 0.1
+      "DamageTypeFire": 0.05,        // 火焰低结构伤害 / Fire: low structural damage
+      "DamageTypeCryo": 0.3,
+      "DamageTypePoison": 0.0,       // 毒素不被硬度阻挡 / Poison not blocked by hardness
+      "DamageTypeRadiation": 0.0     // 辐射不被硬度阻挡 / Radiation not blocked by hardness
+    }
+  }
+}

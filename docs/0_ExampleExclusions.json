@@ -1,0 +1,65 @@
+{
+  "description": "排除规则配置示例：控制哪些物品不参与耐久系统 / Exclusion Rule Example",
+  "rules": [
+    // =========================================================================
+    // 示例：完全排除（不可玩物品、剧情关键物）/ Example: Full Exclusion
+    // =========================================================================
+    {
+      "name": "Full Exclusions (Quest Items & Unplayables)",
+      // 关键词匹配（扁平数组，OR 逻辑 — 注意不是二维数组！）
+      // Flat keyword array (OR logic — note: NOT a 2D array like weapons!)
+      "keywords": ["Unplayable", "NonPlayable", "ArmorTypePipBoy"],
+      // 精确 FormID 匹配 / Exact FormID matching
+      "formIDs": [
+        "Fallout4.esm|021B3B"  // 哔哔小子这样的关键物品 / Pip-Boy etc.
+      ],
+      // 按插件来源排除（该插件内所有物品都受影响）
+      // Exclusion by plugin source (all items from these plugins are affected)
+      "plugins": [],
+      "enableDurabilitySystem": false,  // 不计算耐久损耗 / No durability loss
+      "showDurabilityUI": false         // UI 中隐藏状况条 / Hide condition bar in UI
+    },
+    // =========================================================================
+    // 示例：仅显示状况 UI，但不计算本系统耐久 / Example: UI Only, No Durability Calc
+    // =========================================================================
+    {
+      "name": "Vanilla PA: Display Only",
+      // 关键词匹配 / Keyword matching
+      "keywords": ["ArmorTypePower"],
+      "formIDs": [],
+      "plugins": [],
+      // 不应用本系统的耐久伤害，避免与原版动力甲破损系统冲突
+      // Don't apply this system's durability damage — avoid conflict with vanilla PA damage
+      "enableDurabilitySystem": false,
+      // 但仍保留 UI 显示状况条 / Still show condition bar in UI
+      "showDurabilityUI": true
+    },
+    // =========================================================================
+    // 示例：完全启用（默认排除的物品强制启用）/ Example: Force Enable
+    // =========================================================================
+    {
+      "name": "Force Enable Custom Items",
+      "keywords": ["csf_ForceDurability"],
+      "formIDs": [
+        "YourMod.esp|AAAAAA"
+      ],
+      "plugins": [],
+      // 强制启用耐久系统 / Force-enable the durability system
+      "enableDurabilitySystem": true,
+      "showDurabilityUI": true
+    },
+    // =========================================================================
+    // 示例：按插件批量排除 / Example: Bulk Exclusion by Plugin
+    // =========================================================================
+    {
+      "name": "Exclude All Items from a Plugin",
+      "keywords": [],
+      "formIDs": [],
+      // 该插件内的所有物品都受影响
+      // All items from this plugin are affected
+      "plugins": ["SomeLargeMod.esm"],
+      "enableDurabilitySystem": false,
+      "showDurabilityUI": false
+    }
+  ]
+}

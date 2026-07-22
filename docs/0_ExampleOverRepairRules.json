@@ -1,0 +1,85 @@
+{
+  "description": "过修规则配置示例：按技能等级决定维修上限 / Over-Repair Rule Example",
+  "OverRepairRules": [
+    // =========================================================================
+    // 示例：实弹枪械过修（依赖枪械迷 Perk）/ Example: Firearms (Gun Nut)
+    // =========================================================================
+    {
+      "RuleName": "Over-Repair Firearms (Gun Nut)",
+      // TargetKeywords: 只有带这些关键词的武器受此规则管辖
+      // TargetKeywords: only weapons with these keywords are covered
+      "TargetKeywords": [
+        "WeaponTypePistol",
+        "WeaponTypeRifle",
+        "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun"
+      ],
+      // RequiredSkill: 决定读取玩家的哪种能力
+      // RequiredSkill: determines the player capability used
+      "RequiredSkill": {
+        "Type": "Perk",                // "Perk" = 特技等级 / Perk rank
+        "Plugin": "Fallout4.esm",
+        "FormID": "0x0004A0DA"         // 枪械迷 (GunNut01)
+      },
+      "AVStep": 25,                    // Perk 规则不使用此值 / Unused for Perk rules
+      // RankLimits: 各技能等级对应的状况上限
+      // RankLimits: condition limits per skill rank
+      // 索引 0 = 无 Perk(100%) → 索引 4 = 等级 4(200%)
+      // Index 0 = no perk(100%) → index 4 = rank 4(200%)
+      "RankLimits": [1.0, 1.25, 1.50, 1.75, 2.0]
+    },
+    // =========================================================================
+    // 示例：近战武器过修（依赖铁匠 Perk）/ Example: Melee Weapons (Blacksmith)
+    // =========================================================================
+    {
+      "RuleName": "Over-Repair Melee (Blacksmith)",
+      "TargetKeywords": [
+        "WeaponTypeMelee1H",
+        "WeaponTypeMelee2H",
+        "WeaponTypeUnarmed"
+      ],
+      "RequiredSkill": {
+        "Type": "Perk",
+        "Plugin": "Fallout4.esm",
+        "FormID": "0x0004B253"         // 铁匠 (Blacksmith01)
+      },
+      "AVStep": 25,
+      "RankLimits": [1.0, 1.25, 1.50, 1.75, 2.0]
+    },
+    // =========================================================================
+    // 示例：护甲过修（依赖装甲商 Perk）/ Example: Armor (Armorer)
+    // =========================================================================
+    {
+      "RuleName": "Over-Repair Armor (Armorer)",
+      "TargetKeywords": [
+        "ArmorTypeLeather",
+        "ArmorTypeMetal",
+        "ArmorTypeCombat",
+        "ArmorTypePower"
+      ],
+      "RequiredSkill": {
+        "Type": "Perk",
+        "Plugin": "Fallout4.esm",
+        "FormID": "0x0004B254"         // 装甲商 (Armorer01)
+      },
+      "AVStep": 25,
+      // 护甲获得更慷慨的上限（等级 3 即可达 180%）
+      // Armor gets more generous limits (rank 3 reaches 180%)
+      "RankLimits": [1.0, 1.30, 1.60, 1.80, 2.0]
+    },
+    // =========================================================================
+    // 示例：通过属性值（AV）决定上限 / Example: Actor Value Based
+    // =========================================================================
+    {
+      "RuleName": "Over-Repair by Intelligence",
+      "TargetKeywords": ["WeaponTypeEnergy"],
+      "RequiredSkill": {
+        "Type": "AV",                  // AV = 读取 Actor Value
+        "Plugin": "Fallout4.esm",
+        "FormID": "0x0002C9"           // 智力 (Intelligence)
+      },
+      "AVStep": 5,                     // 每 5 点智力 = 一个等级 / Every 5 INT = one rank
+      "RankLimits": [1.0, 1.1, 1.2, 1.3, 1.4]
+    }
+  ]
+}

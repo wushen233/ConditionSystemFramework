@@ -1,0 +1,126 @@
+{
+  "JuryRiggingRules": [
+    {
+      "RuleName": "Guns Stage 3 Late (Level 100): Universal Repair (100% Efficiency)",
+      "Description": "Any ranged firearm can repair any other, across weapon types and energy/ballistic categories, at full efficiency.",
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper", "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle", "WeaponTypeLaser", "WeaponTypePlasma"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 100
+      }
+    },
+    {
+      "RuleName": "Guns Stage 3 Early (Level 75): Cross-Type Repair (80% Efficiency)",
+      "Description": "Pistols may repair rifles, and ballistic weapons may repair energy weapons, but 20% condition efficiency is lost.",
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper", "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle", "WeaponTypeLaser", "WeaponTypePlasma"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 75
+      }
+    },
+    {
+      "RuleName": "Guns Stage 2 Late (Level 50): Same Type Across Tech (80% Efficiency)",
+      "Description": "Pistols can only repair pistols, but ballistic weapons can repair matching energy weapon types with 20% efficiency loss.",
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper", "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle", "WeaponTypeLaser", "WeaponTypePlasma"
+      ],
+      "MatchCategories": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper", "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 50
+      }
+    },
+    {
+      "RuleName": "Guns Stage 2 Early (Level 25): Same Type and Ballistic Only (80% Efficiency)",
+      "Description": "Ballistic weapons can repair only matching ballistic weapon types, with 20% efficiency loss.",
+      "TargetKeywords": ["WeaponTypeBallistic"],
+      "MatchCategories": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper", "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 25
+      }
+    },
+    {
+      "RuleName": "Guns Stage 2 Early (Level 25): Same Type and Energy Only (80% Efficiency)",
+      "Description": "Energy weapons can repair only matching energy weapon types, with 20% efficiency loss.",
+      "TargetKeywords": [
+        "WeaponTypeLaser", "WeaponTypePlasma", "WeaponTypeGammaGun", "WeaponTypeAlienBlaster",
+        "WeaponTypeGaussRifle", "WeaponTypeCryolater", "WeaponTypeLaserMusket"
+      ],
+      "MatchCategories": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper", "WeaponTypeShotgun",
+        "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 25
+      }
+    },
+    {
+      "RuleName": "Melee Stage 3 (Level 75): Cross-Grip Repair (100% Efficiency)",
+      "Description": "No restrictions; one-handed, two-handed, and unarmed weapons are compatible.",
+      "TargetKeywords": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed",
+        "WeaponTypeHandToHand", "WeaponTypeRipper", "WeaponTypeShishkebab"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 75
+      }
+    },
+    {
+      "RuleName": "Melee Stage 2 (Level 25): Same Grip Type (100% Efficiency)",
+      "Description": "One-handed weapons repair one-handed weapons; two-handed weapons repair two-handed weapons.",
+      "TargetKeywords": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed",
+        "WeaponTypeHandToHand", "WeaponTypeRipper", "WeaponTypeShishkebab"
+      ],
+      "MatchCategories": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed", "WeaponTypeHandToHand"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 25
+      }
+    },
+    {
+      "RuleName": "Armor Stage 3 (Level 100): Universal Repair (100% Efficiency)",
+      "Description": "Any wearable armor or clothing can repair any other, regardless of material or body slot.",
+      "TargetKeywords": ["IS_ARMOR"],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 100
+      }
+    },
+    {
+      "RuleName": "Armor Stage 2 Early (Level 25): Same Material Repair (100% Efficiency)",
+      "Description": "Armor in the same material family, such as leather or combat armor, can repair across arms, legs, and torso.",
+      "TargetKeywords": ["IS_ARMOR"],
+      "MatchCategories": [
+        "ArmorTypeLeather", "ArmorTypeMetal", "ArmorTypeCombat",
+        "ArmorTypeRaider", "ArmorTypeSynth", "ClothingTypeOutfit"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV", "Plugin": "Classic Skill System.esp", "FormID": "FA0", "MinLevel": 25
+      }
+    }
+  ]
+}

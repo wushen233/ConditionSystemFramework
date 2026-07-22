@@ -1,0 +1,32 @@
+{
+    "profiles": [
+        {
+            "name": "MR_10mm_AP", // 穿甲弹 / Armor-piercing round
+            // weaponWearMult：武器磨损倍率。穿甲弹膛压更高，会让武器磨损更快。
+            // weaponWearMult: weapon wear multiplier. Armor-piercing rounds use higher pressure and wear weapons faster.
+            "weaponWearMult": 1.5,
+            // armorDamageMult：护甲破坏倍率。对敌人护甲造成双倍耐久损耗。
+            // armorDamageMult: armor damage multiplier. Doubles durability damage dealt to enemy armor.
+            "armorDamageMult": 2.0,
+            "formIDs": [
+                "MunitionsReloaded.esp|40920"
+            ]
+        },
+        {
+            "name": "MR_10mm_HP", // 空尖弹 / Hollow-point round
+            "weaponWearMult": 1.0, // 正常膛压与磨损。 / Normal pressure and wear.
+            "armorDamageMult": 0.4, // 穿甲能力差，对护甲耐久伤害低。 / Poor armor penetration, low armor durability damage.
+            "formIDs": [
+                "MunitionsReloaded.esp|40921"
+            ]
+        },
+        {
+            "name": "MR_10mm_Incendiary", // 燃烧弹 / Incendiary round
+            "weaponWearMult": 2.0, // 高温导致枪管严重磨损。 / Heat causes heavy barrel wear.
+            "armorDamageMult": 1.0, 
+            "formIDs": [
+                "MunitionsReloaded.esp|162F97"
+            ]
+        }
+    ]
+}

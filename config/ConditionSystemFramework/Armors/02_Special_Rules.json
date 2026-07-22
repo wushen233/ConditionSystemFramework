@@ -1,0 +1,32 @@
+{
+    // 特殊护甲 profile。按伤害类型的差异由全局 Rules/01_DamageFormula.json 处理；
+    // 早期的 "damageResponses" 字段已废弃并移除（C++ 代码不再读取）。
+    // Special armor profiles. Per-damage-type behavior is global via Rules/01_DamageFormula.json;
+    // the legacy "damageResponses" field is deprecated and removed (no longer read by C++).
+    "profiles": [
+        {
+            "name": "Hazmat_Suit_Rubber",
+            "priority": 95,
+            "maxDurability": 250.0, // 防化服本身耐久不高。 / Hazmat suits have limited durability.
+            "useFlatDegrade": false,
+            "degradeRate": 0.0,
+            "keywords": [
+                [ "ArmorTypeHazmat" ]
+            ]
+        },
+        {
+            "name": "Heavy_Power_Armor_Plating",
+            "priority": 100,
+            "maxDurability": 2000.0,
+
+            // 使用每次命中固定磨损。
+            // Uses fixed wear per hit.
+            "useFlatDegrade": true,
+            "degradeRate": 1.5,       // 每发子弹在弹药倍率前扣除 1.5 耐久。 / Each bullet removes 1.5 durability before ammo multipliers.
+
+            "keywords": [
+                [ "ArmorTypePower" ]
+            ]
+        }
+    ]
+}

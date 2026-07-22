@@ -1,0 +1,48 @@
+{
+  "description": "战利品状况奖励规则配置示例 / Loot Condition Bonus Rule Example",
+  "LootBonusRule": {
+    // 总开关 / Master enable switch
+    "Enabled": true,
+
+    // RequiredAV: 玩家的哪个属性值来决定奖励档位
+    // RequiredAV: which actor value determines the bonus tier
+    "RequiredAV": {
+      "Plugin": "Fallout4.esm",
+      "FormID": "0x000002C8"  // 原版幸运 (Luck AVIF)
+    },
+
+    // GlobalCap: 奖励状况的全局上限，不超过 200%
+    // GlobalCap: global bonus cap, cannot exceed 200%
+    "GlobalCap": 2.00,
+
+    "Tiers": [
+      // ===================================================================
+      // 档位 1：幸运 >= 5 / Tier 1: Luck >= 5
+      // ===================================================================
+      {
+        "MinAVLevel": 5.0,     // 最低需求幸运 / Minimum Luck required
+        "HitChance": 2.0,       // 2% 触发几率 / 2% chance to trigger
+        "BonusMinPct": 0.05,    // 触发后最低额外状况 +5% / Minimum bonus +5%
+        "BonusMaxPct": 0.15     // 触发后最高额外状况 +15% / Maximum bonus +15%
+      },
+      // ===================================================================
+      // 档位 2：幸运 >= 8（覆盖档位 1）/ Tier 2: Luck >= 8 (overrides tier 1)
+      // ===================================================================
+      {
+        "MinAVLevel": 8.0,
+        "HitChance": 5.0,       // 5% 触发几率 / 5% chance
+        "BonusMinPct": 0.15,    // +15%~+30% 额外状况 / +15%~+30% bonus condition
+        "BonusMaxPct": 0.30
+      },
+      // ===================================================================
+      // 档位 3：幸运 >= 10（覆盖档位 1 和 2）/ Tier 3: Luck >= 10
+      // ===================================================================
+      {
+        "MinAVLevel": 10.0,
+        "HitChance": 10.0,      // 10% 触发几率 / 10% chance
+        "BonusMinPct": 0.30,
+        "BonusMaxPct": 0.50
+      }
+    ]
+  }
+}

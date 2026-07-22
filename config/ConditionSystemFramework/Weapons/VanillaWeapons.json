@@ -1,0 +1,118 @@
+{
+  "profiles": [
+    {
+      "name": "Pipe_Weapons",
+      // 铁管武器优先级最高，因为它们也可能带有手枪/步枪标签。
+      // Pipe weapons have the highest priority because they can also carry pistol/rifle keywords.
+      "priority": 100,
+      "maxDurability": 400.0,  // 废土自制武器极易损坏。 / Wasteland-built weapons break easily.
+      "degradeRate": 2.0,
+	  "canJam": true,          // 铁管武器很容易卡壳。 / Pipe weapons jam easily.
+      "keywords": [ ["dn_weap_Pipe"] ]
+    },
+    {
+      "name": "Sniper_Rifles",
+      // 狙击步枪。 / Sniper rifles.
+      "priority": 90,
+      "maxDurability": 600.0,
+      "degradeRate": 4.0,      // 大威力射击会造成严重枪管磨损。 / High-powered shots cause heavy barrel wear.
+	  "canJam": true,          // 精密枪机结构可能卡壳。 / Precision actions can jam.
+      "keywords": [ ["WeaponTypeSniper"] ]
+    },
+    {
+      "name": "Shotguns",
+      // 霰弹枪。 / Shotguns.
+      "priority": 80,
+      "maxDurability": 900.0,
+      "degradeRate": 3.0,      // 结构皮实，但膛压高。 / Durable construction, but high chamber pressure.
+	  "canJam": true,          // 霰弹枪可能卡壳。 / Shotguns can jam.
+      "keywords": [ ["WeaponTypeShotgun"] ]
+    },
+    {
+      "name": "Automatic_Weapons",
+      // 自动武器，例如突击步枪和冲锋枪。
+      // Automatic weapons such as assault rifles and submachine guns.
+      "priority": 70,
+      "maxDurability": 2500.0, // 高射速需要更高的总耐久池。 / High rate of fire requires a high durability pool.
+      "degradeRate": 1.0,      // 单发磨损低，但连射会快速累计。 / Low wear per shot, but rapid fire adds up.
+	  "canJam": true,          // 高射速会提高卡壳风险。 / High fire rate increases jam risk.
+      "keywords": [ ["WeaponTypeAutomatic"] ]
+    },
+    {
+      "name": "Energy_Weapons",
+      // 能量武器，包括原版高科技特殊武器。
+      // Energy weapons, including high-tech vanilla special weapons.
+      "priority": 60,
+      "maxDurability": 1000.0,
+      "degradeRate": 2.5,
+	  "canJam": true,          // 模拟过热、电容短路或排气故障。 / Simulates overheating, capacitor shorts, or venting failures.
+      "keywords": [ 
+        ["WeaponTypeLaser"],           // 激光 / Laser
+        ["WeaponTypePlasma"],          // 电浆 / Plasma
+        ["WeaponTypeGammaGun"],        // 伽马枪（辐射） / Gamma gun (radiation)
+        ["WeaponTypeAlienBlaster"],    // 外星破坏者 / Alien blaster
+        ["WeaponTypeGaussRifle"],      // 高斯步枪（电磁） / Gauss rifle (electromagnetic)
+        ["WeaponTypeCryolater"]        // 冰冻枪 / Cryolator
+      ]
+    },
+    {
+      "name": "Heavy_Weapons",
+      // 重型武器，例如胖子核弹、导弹发射器、加特林激光和旋转机枪。
+      // Heavy weapons such as Fat Man, missile launchers, Gatling lasers, and miniguns.
+      "priority": 50,
+      "maxDurability": 5000.0, // 重型平台拥有极高耐久。 / Heavy platforms have very high durability.
+      "degradeRate": 1.0,
+	  "canJam": true,          // 供弹带或发射机构可能故障。 / Feed belts or launch mechanisms can fail.
+      "keywords": [ ["WeaponTypeHeavyGun"] ]
+    },
+    {
+      "name": "SemiAuto_Rifles",
+      // 半自动步枪，例如战斗步枪和猎枪。
+      // Semi-automatic rifles such as combat rifles and hunting rifles.
+      "priority": 40,
+      "maxDurability": 1200.0,
+      "degradeRate": 2.0,
+	  "canJam": true,
+      "keywords": [ ["WeaponTypeRifle"] ]
+    },
+    {
+      "name": "SemiAuto_Pistols",
+      // 半自动手枪，例如 10mm 手枪和左轮。
+      // Semi-automatic pistols such as 10mm pistols and revolvers.
+      "priority": 30,
+      "maxDurability": 800.0,
+      "degradeRate": 1.0,
+	  "canJam": true,
+      "keywords": [ ["WeaponTypePistol"] ]
+    },
+    {
+      "name": "Melee_and_Unarmed",
+      // 近战与徒手武器，例如动力拳套、死爪臂铠、刀剑和棍棒。
+      // Melee and unarmed weapons such as power fists, deathclaw gauntlets, blades, and clubs.
+      "priority": 20,
+      "maxDurability": 1000.0,
+      "degradeRate": 2.0,
+	  "canJam": false,         // 近战武器不会卡壳。 / Melee weapons cannot jam.
+      "keywords": [
+        ["WeaponTypeMelee1H"],     // 单手近战 / One-handed melee
+        ["WeaponTypeMelee2H"],     // 双手近战 / Two-handed melee
+        ["WeaponTypeUnarmed"],     // 徒手武器 / Unarmed weapons
+        ["WeaponTypeHandToHand"]   // 引擎底层徒手格斗关键词 / Engine-level hand-to-hand keyword
+      ]
+    },
+    {
+      "name": "Fallback_Default_Weapon",
+      // 未带更具体原版关键词的 Mod 武器兜底规则。
+      // Fallback for mod weapons that do not carry more specific vanilla keywords.
+      // 任何落到这里的实弹枪械都会使用这些数值。
+      // Any ballistic gun that reaches this rule uses these values.
+      "priority": 0,
+      "maxDurability": 1000.0,
+      "degradeRate": 2.0,
+	  "canJam": true,          // 默认未分类枪械允许卡壳。 / Uncategorized guns can jam by default.
+      "keywords": [
+        ["WeaponTypeBallistic"]    // 实弹武器通用关键词 / Common ballistic weapon keyword
+      ]
+    }
+  ]
+}

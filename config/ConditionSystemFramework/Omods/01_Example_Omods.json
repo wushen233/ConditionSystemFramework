@@ -1,0 +1,155 @@
+{
+  "description": "OMOD (Object Modification) 配置示例 - 每个 profile 对应一个改装件规则",
+  "profiles": [
+    {
+      "name": "AdvancedReceiver",
+      "priority": 50,
+      "degradeMult": 1.3,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.0,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["ReceiverAdvanced"]]
+    },
+    {
+      "name": "CalibratedReceiver",
+      "priority": 50,
+      "degradeMult": 1.1,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.0,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["ReceiverCalibrated"]]
+    },
+    {
+      "name": "HeavyBarrel",
+      "priority": 40,
+      "degradeMult": 0.8,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.3,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["BarrelHeavy"]]
+    },
+    {
+      "name": "LongBarrel",
+      "priority": 40,
+      "degradeMult": 1.05,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.1,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["BarrelLong"]]
+    },
+    {
+      "name": "ShortBarrel",
+      "priority": 40,
+      "degradeMult": 0.95,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.85,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["BarrelShort"]]
+    },
+    {
+      "name": "Suppressor",
+      "priority": 60,
+      "degradeMult": 1.25,
+      "degradeRateFlat": 0.5,
+      "maxDurabilityMult": 0.9,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["Muzzle_Silencer"]]
+    },
+    {
+      "name": "Compensator",
+      "priority": 60,
+      "degradeMult": 1.15,
+      "degradeRateFlat": 0.3,
+      "maxDurabilityMult": 0.95,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["Muzzle_Break"]]
+    },
+    {
+      "name": "HeavyStock",
+      "priority": 30,
+      "degradeMult": 0.85,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.15,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["StockHeavy"]]
+    },
+    {
+      "name": "LightStock",
+      "priority": 30,
+      "degradeMult": 1.2,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.8,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["StockLight"]]
+    },
+    {
+      "name": "AutoHammer",
+      "priority": 70,
+      "degradeMult": 1.4,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.85,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["AutoHammer"]]
+    },
+    {
+      "name": "HairTrigger",
+      "priority": 70,
+      "degradeMult": 0.9,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.0,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["HairTrigger"]]
+    },
+    {
+      "name": "PowerfulReceiver_Receiver_AnyCaliber",
+      "priority": 50,
+      "degradeMult": 1.2,
+      "degradeRateFlat": 0.5,
+      "maxDurabilityMult": 0.95,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["ReceiverPowerful", "Receiver_Automatic"]]
+    },
+    {
+      "name": "HardGuard",
+      "priority": 35,
+      "degradeMult": 0.9,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 1.2,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["GuardHard"]]
+    },
+    {
+      "name": "SimpleGuard",
+      "priority": 35,
+      "degradeMult": 1.1,
+      "degradeRateFlat": 0.0,
+      "maxDurabilityMult": 0.85,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["GuardSimple"]]
+    },
+    {
+      "name": "PowerArmorServo",
+      "priority": 100,
+      "degradeMult": 0.7,
+      "degradeRateFlat": -0.3,
+      "maxDurabilityMult": 1.0,
+      "immuneToJam": false,
+      "formIDs": [],
+      "keywords": [["ma_Servo_Rank1"], ["ma_Servo_Rank2"], ["ma_Servo_Rank3"]]
+    }
+  ]
+}

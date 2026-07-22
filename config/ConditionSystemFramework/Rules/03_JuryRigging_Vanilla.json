@@ -1,0 +1,121 @@
+{
+  "JuryRiggingRules": [
+    {
+      "RuleName": "Ballistic Firearms: Cross-Type Repair (Gun Nut Rank 4)",
+      // 1. TargetKeywords：要修理的目标物品和作为材料的物品都必须匹配这个大类。
+      // 1. TargetKeywords: both the target item and material item must match this broad category.
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper",
+        "WeaponTypeShotgun", "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      // 2. MatchCategories：强制分类锁。
+      // 2. MatchCategories: forced category lock.
+      // 留空表示关闭分类锁，允许在大类内跨种类互修。
+      // An empty list disables the lock, allowing cross-type repair inside the broad category.
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0, // 100% 转化效率。 / 100% conversion efficiency.
+      // 3. RequiredSkill：需要辐射 4 原版“枪支迷”等级 4。
+      // 3. RequiredSkill: requires Fallout 4's vanilla Gun Nut rank 4.
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x0004A0DA", "MinRank": 4
+      }
+    },
+    {
+      "RuleName": "Ballistic Firearms: Same-Type Repair (Gun Nut Rank 1)",
+      "Description": "Pistols can only repair pistols; rifles can only repair rifles.",
+      "TargetKeywords": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper",
+        "WeaponTypeShotgun", "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      // 这里启用分类锁。两把武器必须共享下列精确标签之一。
+      // The category lock is active here. Both weapons must share one of these exact tags.
+      "MatchCategories": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper",
+        "WeaponTypeShotgun", "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x0004A0DA", "MinRank": 1
+      }
+    },
+    {
+      "RuleName": "Energy Weapons: Cross-Type Repair (Science! Rank 4)",
+      "TargetKeywords": [
+        "WeaponTypeLaser", "WeaponTypePlasma", "WeaponTypeGammaGun",
+        "WeaponTypeAlienBlaster", "WeaponTypeGaussRifle", "WeaponTypeCryolater"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x000264D9", "MinRank": 4
+      }
+    },
+    {
+      "RuleName": "Energy Weapons: Same-Type Repair (Science! Rank 1)",
+      "TargetKeywords": [
+        "WeaponTypeLaser", "WeaponTypePlasma", "WeaponTypeGammaGun",
+        "WeaponTypeAlienBlaster", "WeaponTypeGaussRifle", "WeaponTypeCryolater"
+      ],
+      "MatchCategories": [
+        "WeaponTypePistol", "WeaponTypeRifle", "WeaponTypeSniper",
+        "WeaponTypeShotgun", "WeaponTypeHeavyGun", "WeaponTypeAssaultRifle"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x000264D9", "MinRank": 1
+      }
+    },
+    {
+      "RuleName": "Melee Weapons: Cross-Grip Repair (Blacksmith Rank 3)",
+      "Description": "No grip restrictions; one-handed, two-handed, and unarmed weapons can repair each other.",
+      "TargetKeywords": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed",
+        "WeaponTypeHandToHand", "WeaponTypeRipper", "WeaponTypeShishkebab"
+      ],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x0004B253", "MinRank": 3
+      }
+    },
+    {
+      "RuleName": "Melee Weapons: Same Grip Type (Blacksmith Rank 1)",
+      "TargetKeywords": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed",
+        "WeaponTypeHandToHand", "WeaponTypeRipper", "WeaponTypeShishkebab"
+      ],
+      "MatchCategories": [
+        "WeaponTypeMelee1H", "WeaponTypeMelee2H", "WeaponTypeUnarmed", "WeaponTypeHandToHand"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x0004B253", "MinRank": 1
+      }
+    },
+    {
+      "RuleName": "Armor: Universal Repair (Armorer Rank 4)",
+      "Description": "Any wearable armor or clothing can repair any other, regardless of material or body slot.",
+      "TargetKeywords": ["IS_ARMOR"],
+      "MatchCategories": [],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x0004B254", "MinRank": 4
+      }
+    },
+    {
+      "RuleName": "Armor: Same Material Across Slots (Armorer Rank 1)",
+      "Description": "Leather repairs leather, but slots do not have to match.",
+      "TargetKeywords": ["IS_ARMOR"],
+      // 两件护甲必须共享以下材质标签之一。
+      // Both armor pieces must share one of these material tags.
+      "MatchCategories": [
+        "ArmorTypeLeather", "ArmorTypeMetal", "ArmorTypeCombat",
+        "ArmorTypeRaider", "ArmorTypeSynth", "ClothingTypeOutfit", "ClothingTypeUnderarmor"
+      ],
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "Perk", "Plugin": "Fallout4.esm", "FormID": "0x0004B254", "MinRank": 1
+      }
+    }
+  ]
+}

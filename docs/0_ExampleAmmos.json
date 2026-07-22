@@ -1,0 +1,79 @@
+{
+  "description": "弹药配置示例：影响武器磨损与护甲破坏倍率 / Ammo Profile Example",
+  "profiles": [
+    // =========================================================================
+    // 示例：穿甲弹 / Example: Armor-Piercing (AP) Rounds
+    // =========================================================================
+    {
+      "name": "Armor-Piercing Rounds",
+      // 武器磨损倍率：穿甲弹膛压高，枪管磨损更快
+      // Weapon wear multiplier: higher chamber pressure increases barrel wear
+      "weaponWearMult": 1.5,
+      // 护甲破坏倍率：对敌人护甲造成双倍耐久伤害
+      // Armor damage multiplier: deals double durability damage to enemy armor
+      "armorDamageMult": 2.0,
+      "formIDs": [
+        "YourMod.esp|XXXXXX"
+      ],
+      "keywords": []
+    },
+    // =========================================================================
+    // 示例：空尖弹 / Example: Hollow-Point (HP) Rounds
+    // =========================================================================
+    {
+      "name": "Hollow-Point Rounds",
+      // 正常膛压，对武器磨损无额外影响
+      // Normal chamber pressure, no extra weapon wear
+      "weaponWearMult": 1.0,
+      // 穿甲能力差，对护甲耐久伤害很低
+      // Poor armor penetration, low armor durability damage
+      "armorDamageMult": 0.4,
+      "formIDs": [
+        "YourMod.esp|YYYYYY"
+      ],
+      "keywords": []
+    },
+    // =========================================================================
+    // 示例：燃烧弹 / Example: Incendiary Rounds
+    // =========================================================================
+    {
+      "name": "Incendiary Rounds",
+      // 高温导致枪管严重磨损
+      // High temperatures cause severe barrel wear
+      "weaponWearMult": 2.0,
+      // 正常护甲破坏倍率
+      // Normal armor damage multiplier
+      "armorDamageMult": 1.0,
+      "formIDs": [
+        "YourMod.esp|ZZZZZZ"
+      ],
+      "keywords": []
+    },
+    // =========================================================================
+    // 示例：亚音速弹（降低磨损）/ Example: Subsonic Rounds (Reduced Wear)
+    // =========================================================================
+    {
+      "name": "Subsonic Rounds",
+      // 低压弹药对武器磨损更小
+      // Low-pressure ammo causes less weapon wear
+      "weaponWearMult": 0.7,
+      "armorDamageMult": 0.8,
+      "formIDs": [
+        "YourMod.esp|WWWWWW"
+      ],
+      "keywords": []
+    },
+    // =========================================================================
+    // 示例：通过关键词匹配弹药 / Example: Keyword-Based Ammo Matching
+    // =========================================================================
+    {
+      "name": "Universal Over-Pressure Rounds",
+      "weaponWearMult": 1.3,
+      "armorDamageMult": 1.5,
+      "formIDs": [],
+      // 所有带 csf_OverPressure 关键词的弹药都使用此配置
+      // All ammo types with the csf_OverPressure keyword use this profile
+      "keywords": [ ["csf_OverPressure"] ]
+    }
+  ]
+}

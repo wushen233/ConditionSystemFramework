@@ -1,0 +1,112 @@
+{
+  "profiles": [
+    {
+      // 万能修理工具：旧版通用工具，可修武器和护甲。
+      // Universal repair tool: legacy general-purpose tool for weapons and armor.
+      "name": "Universal Repair Tool",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "003" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.35,
+      "maxConditionLimit": 1.25
+    },
+    {
+      // 新手护甲修理包：轻量修补，主要用于把低级护甲拉回可用状态。
+      // Novice armor repair kit: light patch-up for keeping basic armor usable.
+      "name": "Novice Armor Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F03" ]
+      },
+      "canRepairWeapon": false,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.25,
+      "maxConditionLimit": 1.0
+    },
+    {
+      // 高级护甲修理包：稳定中量修复，但不允许超过 100%。
+      // Advanced armor repair kit: reliable mid repair, capped at 100%.
+      "name": "Advanced Armor Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F04" ]
+      },
+      "canRepairWeapon": false,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.40,
+      "maxConditionLimit": 1.0
+    },
+    {
+      // 专家护甲修理包：高量修复，并允许进入轻度过修。
+      // Expert armor repair kit: strong repair with light over-repair support.
+      "name": "Expert Armor Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F05" ]
+      },
+      "canRepairWeapon": false,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.60,
+      "maxConditionLimit": 1.25
+    },
+    {
+      // 大师护甲修理包：稀有高端修复，面向重甲和动力甲维护。
+      // Master armor repair kit: rare high-end repair for heavy armor and power armor upkeep.
+      "name": "Master Armor Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F06" ]
+      },
+      "canRepairWeapon": false,
+      "canRepairArmor": true,
+      "baseRepairPercent": 0.85,
+      "maxConditionLimit": 1.5
+    },
+    {
+      // 新手武器修理包：适合管枪和低耐久武器；对重武器只是小修。
+      // Novice weapon repair kit: good for pipe and low-durability weapons; minor for heavy weapons.
+      "name": "Novice Weapon Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F07" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": false,
+      "baseRepairPoints": 250,
+      "maxConditionLimit": 1.0
+    },
+    {
+      // 高级武器修理包：能完整修复多数低级武器，但对自动武器仍是中量维护。
+      // Advanced weapon repair kit: can fully recover many basic weapons, but remains mid repair for automatics.
+      "name": "Advanced Weapon Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F08" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": false,
+      "baseRepairPoints": 600,
+      "maxConditionLimit": 1.0
+    },
+    {
+      // 专家武器修理包：适合步枪、能量武器和霰弹枪，并允许轻度过修。
+      // Expert weapon repair kit: suitable for rifles, energy weapons, and shotguns, with light over-repair support.
+      "name": "Expert Weapon Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F09" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": false,
+      "baseRepairPoints": 1200,
+      "maxConditionLimit": 1.25
+    },
+    {
+      // 大师武器修理包：用于自动武器和重武器的大修，但不会免费填满重武器。
+      // Master weapon repair kit: major repair for automatics and heavy weapons without fully trivializing heavy platforms.
+      "name": "Master Weapon Repair Kit",
+      "formIDs": {
+        "CSF_RepairKit.esp": [ "F0A" ]
+      },
+      "canRepairWeapon": true,
+      "canRepairArmor": false,
+      "baseRepairPoints": 2500,
+      "maxConditionLimit": 1.5
+    }
+  ]
+}
