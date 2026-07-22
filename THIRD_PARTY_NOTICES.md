@@ -1,10 +1,26 @@
 # Third-Party Notices
 
-This repository contains the independently maintained native C++ backend,
-public integration headers, configuration examples, and documentation for
-ConditionSystemFramework. It does not contain FallUI assets, modified FallUI
-ActionScript, FLA projects, compiled SWF files, plugin records, Papyrus
-binaries, or other compiled game assets.
+This repository contains the independently maintained native backend and UI
+source for ConditionSystemFramework. It does not contain compiled SWF files,
+FallUI media assets, plugin records, Papyrus binaries, or other compiled game
+assets.
+
+## UI integration
+
+### FallUI compatibility patches
+
+`ui/actionscript/fallui-patches` contains ActionScript menu files modified for
+ConditionSystemFramework interoperability. The CSF additions are released as
+source, but the underlying Fallout 4 and FallUI portions remain the property of
+their respective authors and are not relicensed by the repository MIT License.
+No FallUI fonts, icons, FLA projects, or compiled SWF files are included.
+
+### Prisma UI 2.0
+
+`ui/prisma/views/csf_condition_widget.html` is an original CSF view that uses
+the Prisma UI F4 bridge. The Prisma UI framework is not vendored. Obtain it
+from its [official repository](https://github.com/PRISMA-USER-INTERFACE-FRAMEWORK/Prisma2.0),
+where it is distributed under its own `LICENSE.md` terms.
 
 ## Vendored source
 

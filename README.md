@@ -8,15 +8,16 @@ Mod page and downloads: [ConditionSystemFramework on Nexus Mods](https://www.nex
 ## Source scope
 
 This repository contains the independently maintained C++ backend, public API
-headers, configuration examples, and developer documentation.
+headers, configuration examples, developer documentation, ActionScript UI
+integration source, the jury-rigging menu Animate project, and the Prisma UI
+condition widget.
 
 It does not include:
 
-- ActionScript source or modified FallUI ActionScript
-- Adobe Animate FLA projects or compiled SWF files
 - ESP/ESL/ESM plugin records
 - compiled Papyrus scripts
-- MCM or Prisma UI runtime pages
+- compiled DLL, PEX, or SWF files
+- MCM package files
 - fonts, icons, or other FallUI assets
 
 Install the complete mod package from Nexus Mods for normal gameplay. The
@@ -33,6 +34,19 @@ public source license applies only to files contained in this repository.
 - Public durability interface for other F4SE plugins
 - Optional ItemIntegrationFramework and Prisma UI F4 integration
 - Multiple Fallout 4 runtime generations through CommonLibF4
+
+## UI source
+
+- `ui/actionscript/jury-rigging-menu` contains the CSF jury-rigging menu AS3,
+  its earlier AS2 source, and the Adobe Animate FLA project.
+- `ui/actionscript/fallui-patches` contains the four menu scripts modified for
+  CSF workbench buttons, repair navigation, and condition display integration.
+- `ui/prisma/views` contains the CSF-authored condition widget for
+  [Prisma UI 2.0](https://github.com/PRISMA-USER-INTERFACE-FRAMEWORK/Prisma2.0).
+
+The FallUI patch sources are separated from original CSF UI code so their
+provenance is explicit. They require the corresponding game/FallUI menu
+projects and assets; those third-party assets are not included here.
 
 ## Requirements
 
@@ -88,6 +102,7 @@ Data/F4SE/Plugins/ConditionSystemFramework.dll
 
 ## License
 
-The original project source is released under the MIT License. Vendored Xbyak
-files remain under their original BSD-3-Clause license. See
+Original CSF source is released under the MIT License. Vendored Xbyak files
+remain under their original BSD-3-Clause license. Third-party portions and
+compatibility patch bases remain subject to their respective terms. See
 `THIRD_PARTY_NOTICES.md` for details.

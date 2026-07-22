@@ -11,3 +11,10 @@ xmake-requires.lock
 *.obj
 *.pdb
 *.user
+*.swf
+*.esp
+*.esl
+*.esm
+*.pex
+*.ttf
+*.otf

@@ -1,0 +1,657 @@
+﻿package {
+    import flash.display.MovieClip;
+    import flash.display.Sprite;
+    import flash.display.Shape;
+    import flash.events.Event;
+    import flash.events.MouseEvent;
+    import flash.text.TextField;
+    import flash.text.TextFormat;
+    import flash.text.AntiAliasType;
+    import flash.geom.ColorTransform;
+
+    public dynamic class JuryRiggingMenu extends MovieClip {
+
+        public var JuryRigging_Callback:Function = null; 
+        private var materialsArray:Array = [];
+        private var selectedIndex:int = 0;
+        private var currentTargetUID:Number = 0;
+        private var targetBasePct:Number = 0.0;
+        private var targetName:String = "";
+        
+        private var themeColor:uint = 0x18FF00; 
+        private var listTextColor:uint = 0xFFFFFF; 
+
+        private var mainCanvas:MovieClip;
+        private var listContainer:MovieClip;
+        private var titleTxt:TextField;
+        private var headerTxt:TextField;
+        
+        private var leftBracket:Shape;
+        private var rightBracket:Shape;
+        private var headerLine:Shape;
+        private var targetInfoBar:MovieClip; 
+
+        private var pulseAlpha:Number = 0.2;
+        private var pulseDir:Number = 0.025; 
+
+        private var maxVisibleItems:int = 16;
+        private var listOffset:int = 0;
+        
+        private var scrollBarBg:Sprite;
+        private var scrollBarThumb:Sprite;
+        
+        private var isDragging:Boolean = false;
+        private var dragStartY:Number = 0;
+        private var startThumbY:Number = 0;
+        private var barX:Number = -35; 
+        private var barY:Number = 100;
+
+        public function JuryRiggingMenu() {
+            super();
+            this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+            this.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
+        }
+
+        private function PlayUISound(soundName:String):void {
+            try {
+                if (Object(root).PlaySound_Call != null) {
+                    Object(root).PlaySound_Call(soundName);
+                } else if (this.stage && this.stage.getChildAt(0) && this.stage.getChildAt(0)["PlaySound_Call"] != null) {
+                    this.stage.getChildAt(0)["PlaySound_Call"](soundName);
+                } else if (this["JuryRigging_Callback"] != null) {
+                    this["JuryRigging_Callback"]("PlaySound", soundName);
+                }
+            } catch(e:Error) {}
+        }
+
+        private function onAddedToStage(e:Event):void {
+            this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+            this.addEventListener(Event.ENTER_FRAME, onEnterFrameLoop);
+            this.stage.addEventListener(MouseEvent.MOUSE_WHEEL, onMouseWheel);
+            InitLayout();
+            try {
+                this["JuryRigging_OnReady"] = this.HandleOnReady;
+                this["ReceiveJuryRiggingData"] = this.HandleReceiveData;
+                var realRoot:Object = this.stage.getChildAt(0);
+                if (realRoot != null && realRoot != this) {
+                    realRoot["JuryRigging_OnReady"] = this.HandleOnReady;
+                    realRoot["ReceiveJuryRiggingData"] = this.HandleReceiveData;
+                }
+            } catch(e:Error) { }
+        }
+
+        private function onRemovedFromStage(e:Event):void {
+            this.removeEventListener(Event.ENTER_FRAME, onEnterFrameLoop);
+            if (this.stage) {
+                this.stage.removeEventListener(MouseEvent.MOUSE_WHEEL, onMouseWheel);
+                this.stage.removeEventListener(MouseEvent.MOUSE_MOVE, onThumbDrag);
+                this.stage.removeEventListener(MouseEvent.MOUSE_UP, onThumbMouseUp);
+            }
+        }
+
+        private function onMouseWheel(e:MouseEvent):void {
+            if (materialsArray.length <= maxVisibleItems) return;
+            if (e.delta > 0) {
+                ProcessUserEvent("Up", false);
+            } else if (e.delta < 0) {
+                ProcessUserEvent("Down", false);
+            }
+        }
+
+        private function onEnterFrameLoop(e:Event):void {
+            pulseAlpha += pulseDir;
+            if (pulseAlpha > 0.7) {
+                pulseAlpha = 0.7;
+                pulseDir = -0.025;
+            } else if (pulseAlpha < 0.2) {
+                pulseAlpha = 0.2;
+                pulseDir = 0.025;
+            }
+            
+            if (targetInfoBar != null) {
+                var addShape:Shape = targetInfoBar.getChildByName("addShape") as Shape;
+                if (addShape != null && addShape.visible) {
+                    addShape.alpha = pulseAlpha; 
+                }
+            }
+        }
+
+        public function HandleOnReady():void {
+            if (this["JuryRigging_Callback"] != null) {
+                this["JuryRigging_Callback"]("RequestData");
+            }
+        }
+
+        public function HandleReceiveData(dataStr:String, isRefresh:* = false, colorVal:Number = -1):void {
+            if (colorVal != -1) {
+                themeColor = uint(colorVal);
+                listTextColor = 0xFFFFFF; 
+            }
+            if (!dataStr || dataStr == "") {
+                headerTxt.text = "NO TARGET";
+                return;
+            }
+            ParseData(dataStr);
+            ClampIndices(); 
+            RenderUI();
+            UpdateSelection();
+            if (isRefresh === true) PlayUISound("UIMenuOK"); 
+        }
+        
+        // =========================================================================
+        // 【核心修复】：彻底解决滚轮被拽回的拔河现象
+        // =========================================================================
+        private function ClampIndices():void {
+            if (materialsArray.length == 0) {
+                selectedIndex = 0;
+                listOffset = 0;
+                return;
+            }
+            if (selectedIndex >= materialsArray.length) selectedIndex = materialsArray.length - 1;
+            if (selectedIndex < 0) selectedIndex = 0;
+            
+            if (isDragging) {
+                // 如果用户在用鼠标拖动，页面为主导！高亮光标必须向页面妥协，防止跳回
+                if (selectedIndex < listOffset) {
+                    selectedIndex = listOffset;
+                } else if (selectedIndex >= listOffset + maxVisibleItems) {
+                    selectedIndex = listOffset + maxVisibleItems - 1;
+                }
+            } else {
+                // 如果用户在按键盘，光标为主导！页面跟着光标走
+                if (listOffset > selectedIndex) {
+                    listOffset = selectedIndex;
+                } else if (listOffset < selectedIndex - maxVisibleItems + 1) {
+                    listOffset = selectedIndex - maxVisibleItems + 1;
+                }
+                var maxOffset:int = materialsArray.length - maxVisibleItems;
+                if (maxOffset < 0) maxOffset = 0;
+                if (listOffset > maxOffset) listOffset = maxOffset;
+            }
+        }
+    
+        private function InitLayout():void {
+            mainCanvas = new MovieClip();
+            mainCanvas.x = 80; 
+            mainCanvas.y = 50; 
+            addChild(mainCanvas);
+
+            titleTxt = CreateTextField(0, 0, 460, 40, 28, themeColor, true);
+            titleTxt.embedFonts = false; 
+            titleTxt.htmlText = "$Repair";
+            mainCanvas.addChild(titleTxt);
+            
+            leftBracket = new Shape();
+            leftBracket.x = 0; leftBracket.y = 52;
+            mainCanvas.addChild(leftBracket);
+
+            headerTxt = CreateTextField(25, 52, 10, 30, 20, themeColor, true);
+            headerTxt.autoSize = "left"; 
+            mainCanvas.addChild(headerTxt);
+
+            targetInfoBar = new MovieClip();
+            mainCanvas.addChild(targetInfoBar);
+
+            rightBracket = new Shape();
+            mainCanvas.addChild(rightBracket);
+
+            headerLine = new Shape();
+            mainCanvas.addChild(headerLine);
+            
+            scrollBarBg = new Sprite();
+            scrollBarBg.buttonMode = true; 
+            scrollBarBg.addEventListener(MouseEvent.MOUSE_DOWN, onTrackClick);
+            mainCanvas.addChild(scrollBarBg);
+            
+            scrollBarThumb = new Sprite();
+            scrollBarThumb.buttonMode = true; 
+            scrollBarThumb.addEventListener(MouseEvent.MOUSE_DOWN, onThumbMouseDown);
+            mainCanvas.addChild(scrollBarThumb);
+
+            listContainer = new MovieClip();
+            listContainer.x = 0; 
+            listContainer.y = 100;
+            mainCanvas.addChild(listContainer);
+        }
+
+        private function onThumbMouseDown(e:MouseEvent):void {
+            if (materialsArray.length <= maxVisibleItems) return;
+            isDragging = true;
+            dragStartY = e.stageY;
+            startThumbY = scrollBarThumb.y;
+            
+            // 【精确比例尺寸】：强制走浮点数运算，列表越长滑块越短
+            var thumbH:Number = Math.max(30, (Number(maxVisibleItems) / Number(materialsArray.length)) * (maxVisibleItems * 28));
+            DrawThumb(true, thumbH);
+            PlayUISound("UIMenuOK");
+
+            stage.addEventListener(MouseEvent.MOUSE_MOVE, onThumbDrag);
+            stage.addEventListener(MouseEvent.MOUSE_UP, onThumbMouseUp);
+        }
+
+        private function onThumbDrag(e:MouseEvent):void {
+            if (!isDragging) return;
+            
+            var deltaY:Number = e.stageY - dragStartY;
+            var barH:Number = maxVisibleItems * 28;
+            var thumbH:Number = Math.max(30, (Number(maxVisibleItems) / Number(materialsArray.length)) * barH);
+            var maxScrollY:Number = barH - thumbH;
+            
+            var newY:Number = startThumbY + deltaY;
+            if (newY < barY) newY = barY;
+            if (newY > barY + maxScrollY) newY = barY + maxScrollY;
+            
+            scrollBarThumb.y = newY; 
+            
+            var scrollPct:Number = (newY - barY) / maxScrollY;
+            var newOffset:int = Math.round(scrollPct * (materialsArray.length - maxVisibleItems));
+            
+            if (newOffset != listOffset) {
+                listOffset = newOffset;
+                // 这次拖动调用时，选中的光标会被 ClampIndices 乖乖带上车，绝对不会再反向回拉！
+                RenderUI();
+                UpdateSelection();
+            }
+        }
+
+        private function onThumbMouseUp(e:MouseEvent):void {
+            isDragging = false;
+            if(stage) {
+                stage.removeEventListener(MouseEvent.MOUSE_MOVE, onThumbDrag);
+                stage.removeEventListener(MouseEvent.MOUSE_UP, onThumbMouseUp);
+            }
+            UpdateScrollbar(); 
+        }
+
+        private function onTrackClick(e:MouseEvent):void {
+            if (isDragging || materialsArray.length <= maxVisibleItems) return;
+            var barH:Number = maxVisibleItems * 28;
+            var thumbH:Number = Math.max(30, (Number(maxVisibleItems) / Number(materialsArray.length)) * barH);
+            
+            var clickY:Number = scrollBarBg.mouseY - barY - (thumbH / 2); 
+            var maxScrollY:Number = barH - thumbH;
+            
+            var pct:Number = clickY / maxScrollY;
+            if (pct < 0) pct = 0;
+            if (pct > 1) pct = 1;
+            
+            var newOffset:int = Math.round(pct * (materialsArray.length - maxVisibleItems));
+            
+            if (newOffset != listOffset) {
+                listOffset = newOffset;
+                RenderUI();
+                UpdateSelection();
+                PlayUISound("UISelectOn");
+            }
+        }
+
+        private function RenderUI():void {
+            titleTxt.textColor = themeColor;
+            headerTxt.textColor = themeColor;
+            headerTxt.text = targetName.toUpperCase();
+            
+            var currentX:Number = headerTxt.x + headerTxt.textWidth + 15;
+            targetInfoBar.x = currentX;
+            targetInfoBar.y = 57; 
+            
+            currentX += 120 + 15; 
+            rightBracket.x = currentX;
+            rightBracket.y = 52;
+            
+            DrawBracket(leftBracket, 8, 24, true);
+            DrawBracket(rightBracket, 8, 24, false);
+
+            headerLine.graphics.clear();
+            headerLine.graphics.lineStyle(1.5, themeColor, 0.4);
+            headerLine.graphics.moveTo(0, 90);
+            headerLine.graphics.lineTo(460, 90);
+
+            while(listContainer.numChildren > 0) listContainer.removeChildAt(0);
+            
+            if (materialsArray.length == 0) {
+                var emptyTxt:TextField = CreateTextField(25, 10, 420, 30, 18, listTextColor);
+                emptyTxt.text = "没有可用于维修的同类零件。";
+                emptyTxt.alpha = 0.5;
+                listContainer.addChild(emptyTxt);
+                UpdateScrollbar(); 
+            } else {
+                var endIndex:int = Math.min(materialsArray.length, listOffset + maxVisibleItems);
+                for (var i:int = listOffset; i < endIndex; i++) {
+                    var item:MovieClip = CreateListEntry(materialsArray[i], i);
+                    item.y = (i - listOffset) * 28; 
+                    listContainer.addChild(item);
+                }
+                UpdateScrollbar(); 
+            }
+        }
+
+        private function UpdateScrollbar():void {
+            if (materialsArray.length <= maxVisibleItems) {
+                scrollBarBg.visible = false;
+                scrollBarThumb.visible = false;
+                return; 
+            }
+            scrollBarBg.visible = true;
+            scrollBarThumb.visible = true;
+            
+            var barH:Number = maxVisibleItems * 28;
+            
+            scrollBarBg.graphics.clear();
+            scrollBarBg.graphics.beginFill(0x000000, 0.0); 
+            scrollBarBg.graphics.drawRect(barX - 15, barY, 30, barH);
+            scrollBarBg.graphics.endFill();
+            scrollBarBg.graphics.lineStyle(1.5, themeColor, 0.2);
+            scrollBarBg.graphics.moveTo(barX, barY);
+            scrollBarBg.graphics.lineTo(barX, barY + barH);
+            
+            // 【重点优化】：明确转型浮点数，现在只要武器变多，滑块就会按标准比例越来越短！(最小30像素)
+            var thumbH:Number = Math.max(30, (Number(maxVisibleItems) / Number(materialsArray.length)) * barH);
+            
+            if (!isDragging) {
+                var thumbY:Number = barY + (Number(listOffset) / Number(materialsArray.length - maxVisibleItems)) * (barH - thumbH);
+                scrollBarThumb.y = thumbY;
+                scrollBarThumb.x = barX;
+                DrawThumb(false, thumbH);
+            }
+        }
+
+        private function DrawThumb(isActive:Boolean, h:Number):void {
+            scrollBarThumb.graphics.clear();
+            var tw:Number = isActive ? 8 : 5;      
+            var alpha:Number = isActive ? 1.0 : 0.6; 
+            var offset:Number = -tw / 2;           
+            
+            scrollBarThumb.graphics.beginFill(0x000000, 0.0);
+            scrollBarThumb.graphics.drawRect(offset - 15, 0, tw + 30, h); 
+            scrollBarThumb.graphics.endFill();
+            
+            scrollBarThumb.graphics.beginFill(themeColor, alpha);
+            scrollBarThumb.graphics.drawRoundRect(offset, 0, tw, h, 4, 4);
+            scrollBarThumb.graphics.endFill();
+        }
+
+        private function UpdateSelection():void {
+            if (materialsArray.length == 0) {
+                DrawBar(targetInfoBar, 120, 16, targetBasePct, 0);
+                return;
+            }
+            ClampIndices(); // 先锁死合法位置！
+            
+            for (var i:int = 0; i < listContainer.numChildren; i++) {
+                var row:MovieClip = listContainer.getChildAt(i) as MovieClip;
+                if (row == null || row.name == "emptyTxt") continue; 
+
+                var actualIndex:int = row.idx;
+                var isSelected:Boolean = (actualIndex == selectedIndex);
+                
+                var bg:Shape = row.getChildByName("bg") as Shape;
+                var eqIcon:TextField = row.getChildByName("eqIcon") as TextField;
+                var txt:TextField = row.getChildByName("txt") as TextField;
+                var valTxt:TextField = row.getChildByName("valTxt") as TextField;
+                var matBar:MovieClip = row.getChildByName("matBar") as MovieClip;
+                
+                bg.graphics.clear();
+                bg.graphics.beginFill(themeColor, 1.0);
+                bg.graphics.drawRect(0, 0, 460, 28); 
+                bg.graphics.endFill();
+
+                if (isSelected) {
+                    bg.alpha = 0.9;
+                    if (eqIcon) eqIcon.textColor = 0x000000;
+                    txt.textColor = 0x000000; 
+                    valTxt.textColor = 0x000000;
+                    if (matBar) DrawMiniBar(matBar, 55, 12, materialsArray[actualIndex].pct, 0x000000);
+                } else {
+                    bg.alpha = 0.0;
+                    if (eqIcon) eqIcon.textColor = themeColor;
+                    txt.textColor = listTextColor; 
+                    valTxt.textColor = themeColor; 
+                    if (matBar) DrawMiniBar(matBar, 55, 12, materialsArray[actualIndex].pct, themeColor);
+                }
+            }
+            
+            var add:Number = materialsArray[selectedIndex].addPct;
+            if (targetBasePct >= 0.999) add = 0;
+            DrawBar(targetInfoBar, 120, 16, targetBasePct, add); 
+            
+            if (!isDragging) UpdateScrollbar();
+        }
+
+        private function CreateListEntry(data:Object, idx:int):MovieClip {
+            var row:MovieClip = new MovieClip();
+            
+            var bg:Shape = new Shape();
+            bg.name = "bg";
+            row.addChild(bg);
+
+            var sepLine:Shape = new Shape();
+            sepLine.graphics.lineStyle(1, themeColor, 0.15); 
+            sepLine.graphics.moveTo(0, 27);
+            sepLine.graphics.lineTo(460, 27);
+            row.addChild(sepLine);
+
+            var eqIcon:TextField = CreateTextField(6, 2, 20, 26, 16, themeColor);
+            eqIcon.name = "eqIcon";
+            eqIcon.text = data.isEquipped ? "■" : "";
+            row.addChild(eqIcon);
+
+            var valTxt:TextField = CreateTextField(0, 3, 200, 26, 14, themeColor, true);
+            valTxt.name = "valTxt";
+            valTxt.autoSize = "left"; 
+            
+            if (targetBasePct >= 0.999) {
+                valTxt.text = "[ MAX ]";
+            } else {
+                var totalAdd:int = Math.floor(data.addPct * 100);
+                var needed:int = Math.round((1.0 - targetBasePct) * 100);
+                if (totalAdd > needed) {
+                    var actualAdd:int = needed;
+                    var overflow:int = totalAdd - needed;
+                    valTxt.text = "[ +" + actualAdd + "% (+" + overflow + "%) ]";
+                } else {
+                    valTxt.text = "[ +" + totalAdd + "% ]";
+                }
+            }
+            
+            valTxt.x = 385 - valTxt.width;
+            row.addChild(valTxt);
+
+            var matBar:MovieClip = new MovieClip();
+            matBar.name = "matBar";
+            matBar.x = 395; 
+            matBar.y = 8;
+            DrawMiniBar(matBar, 55, 12, data.pct, themeColor);
+            row.addChild(matBar);
+
+            var maxNameWidth:Number = valTxt.x - 25 - 10; 
+            var txt:TextField = CreateTextField(25, 2, maxNameWidth, 26, 16, listTextColor);
+            txt.name = "txt";
+            txt.text = data.name;
+            row.addChild(txt);
+
+            row.mouseChildren = false; 
+            row.buttonMode = true; 
+            row.idx = idx;
+
+            row.addEventListener(MouseEvent.MOUSE_OVER, onMouseOverItem);
+            row.addEventListener(MouseEvent.CLICK, onMouseClickItem);
+
+            return row;
+        }
+
+        private function DrawMiniBar(mc:MovieClip, w:Number, h:Number, pct:Number, color:uint):void {
+            mc.graphics.clear();
+            mc.graphics.lineStyle(1, color, 0.4);
+            mc.graphics.beginFill(color, 0.1);
+            mc.graphics.drawRect(0, 0, w, h);
+            mc.graphics.endFill();
+            
+            if (pct > 0) {
+                mc.graphics.lineStyle();
+                mc.graphics.beginFill(color, 1.0);
+                var curW:Number = (w - 4) * Math.min(1, pct);
+                if (curW > 0) {
+                    mc.graphics.drawRect(2, 2, curW, h - 4);
+                }
+                mc.graphics.endFill();
+            }
+        }
+
+        private function DrawBar(mc:MovieClip, w:Number, h:Number, pct:Number, add:Number = 0):void {
+            var bgShape:Shape = mc.getChildByName("bgShape") as Shape;
+            var curShape:Shape = mc.getChildByName("curShape") as Shape;
+            var addShape:Shape = mc.getChildByName("addShape") as Shape;
+            
+            if (!bgShape) {
+                bgShape = new Shape(); bgShape.name = "bgShape"; mc.addChild(bgShape);
+                curShape = new Shape(); curShape.name = "curShape"; mc.addChild(curShape);
+                addShape = new Shape(); addShape.name = "addShape"; mc.addChild(addShape);
+            }
+
+            var borderThickness:Number = 1.5;
+            var padding:Number = 3;
+
+            bgShape.graphics.clear();
+            bgShape.graphics.lineStyle(borderThickness, themeColor, 0.6);
+            bgShape.graphics.beginFill(themeColor, 0.1);
+            bgShape.graphics.drawRect(0, 0, w, h);
+            bgShape.graphics.endFill();
+            
+            var maxFillW:Number = w - padding * 2;
+            var fillH:Number = h - padding * 2;
+            
+            if (maxFillW <= 0 || fillH <= 0) return;
+
+            var curW:Number = maxFillW * Math.min(1, pct);
+
+            curShape.graphics.clear();
+            curShape.x = padding;
+            curShape.y = padding;
+            if (curW > 0) {
+                curShape.graphics.beginFill(themeColor, 1.0); 
+                curShape.graphics.drawRect(0, 0, curW, fillH);
+                curShape.graphics.endFill();
+            }
+
+            addShape.graphics.clear();
+            addShape.x = padding;
+            addShape.y = padding;
+            
+            if (add > 0) {
+                var addW:Number = maxFillW * add;
+                if (curW + addW > maxFillW) addW = maxFillW - curW; 
+                
+                addShape.graphics.beginFill(themeColor, 1.0);
+                addShape.graphics.drawRect(curW, 0, addW, fillH);
+                addShape.graphics.endFill();
+                addShape.visible = true;
+                addShape.alpha = pulseAlpha; 
+            } else {
+                addShape.visible = false;
+            }
+        }
+
+        private function DrawBracket(s:Shape, w:Number, h:Number, isLeft:Boolean):void {
+            s.graphics.clear();
+            s.graphics.lineStyle(1.5, themeColor, 0.6);
+            if (isLeft) {
+                s.graphics.moveTo(w, 0);
+                s.graphics.lineTo(0, 0);
+                s.graphics.lineTo(0, h); s.graphics.lineTo(w, h);
+            } else {
+                s.graphics.moveTo(0, 0);
+                s.graphics.lineTo(w, 0);
+                s.graphics.lineTo(w, h); s.graphics.lineTo(0, h); 
+            }
+        }
+
+        private function CreateTextField(x:Number, y:Number, w:Number, h:Number, size:int, color:uint = 0xFFFFFF, bold:Boolean = false):TextField {
+            var tf:TextField = new TextField();
+            tf.defaultTextFormat = new TextFormat("$MAIN_Font", size, color, bold);
+            tf.embedFonts = true;
+            tf.antiAliasType = AntiAliasType.ADVANCED;
+            tf.x = x; tf.y = y; tf.width = w; tf.height = h;
+            tf.selectable = false; return tf;
+        }
+
+        private function ParseData(rawData:String):void {
+            materialsArray = [];
+            var parts:Array = rawData.split("@");
+            if (parts.length < 1) return;
+            var t:Array = parts[0].split(";");
+            
+            if (t.length >= 3) { currentTargetUID = parseFloat(t[0]); targetName = t[1]; targetBasePct = parseFloat(t[2]); }
+            if (parts.length > 1 && parts[1] != "") {
+                var items:Array = parts[1].split("|");
+                for each (var s:String in items) {
+                    var d:Array = s.split(";");
+                    if (d.length >= 4) {
+                        var eq:Boolean = (d.length >= 5 && d[4] == "1");
+                        materialsArray.push({uid:parseFloat(d[0]), name:d[1], pct:parseFloat(d[2]), addPct:parseFloat(d[3]), isEquipped:eq});
+                    }
+                }
+            }
+        }
+
+        private function onMouseOverItem(e:MouseEvent):void {
+            var item:MovieClip = e.currentTarget as MovieClip;
+            if (item && item.idx != undefined && selectedIndex != item.idx) {
+                selectedIndex = item.idx;
+                UpdateSelection();
+                PlayUISound("UISelectOn");
+            }
+        }
+
+        private function onMouseClickItem(e:MouseEvent):void {
+            var item:MovieClip = e.currentTarget as MovieClip;
+            if (item && item.idx != undefined) {
+                selectedIndex = item.idx;
+                UpdateSelection();
+                ProcessUserEvent("Accept", false);
+            }
+        }
+
+        public function ProcessUserEvent(p1:String, p2:Boolean):Boolean {
+            if (p2) return false;
+            if (p1 == "Cancel") { PlayUISound("UIMenuCancel"); return false; }
+            if (materialsArray.length == 0) return false;
+            
+            if (p1 == "Up" && selectedIndex > 0) { 
+                selectedIndex--; 
+                if (selectedIndex < listOffset) {
+                    listOffset = selectedIndex;
+                    RenderUI(); 
+                }
+                UpdateSelection(); 
+                PlayUISound("UISelectOff"); 
+                return true; 
+            }
+            if (p1 == "Down" && selectedIndex < materialsArray.length - 1) { 
+                selectedIndex++; 
+                if (selectedIndex >= listOffset + maxVisibleItems) {
+                    listOffset = selectedIndex - maxVisibleItems + 1;
+                    RenderUI(); 
+                }
+                UpdateSelection(); 
+                PlayUISound("UISelectOn"); 
+                return true; 
+            }
+            if (p1 == "Accept") { 
+                if (targetBasePct >= 0.999) {
+                    PlayUISound("UIMenuCancel"); 
+                    return true;
+                }
+
+                if (materialsArray.length > 0) {
+                    if (Object(root).ExecuteJuryRigging_Call != null) {
+                        Object(root).ExecuteJuryRigging_Call(currentTargetUID, materialsArray[selectedIndex].uid);
+                    } else if (this["JuryRigging_Callback"] != null) {
+                        this["JuryRigging_Callback"]("ExecuteJuryRigging", currentTargetUID, materialsArray[selectedIndex].uid);
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+}

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Condition System Framework HUD</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+  }
+
+  html,
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+    font-family: "Consolas", "Courier New", monospace;
+    pointer-events: none;
+  }
+
+  body {
+    color: var(--hud-color, #18ff00);
+  }
+
+  #condition-widget {
+    --widget-w: 148px;
+    --widget-h: 22px;
+    --bar-x: 48px;
+    --bar-y: 5px;
+    --bar-w: 65px;
+    --bar-h: 14px;
+    --cnd-x: 0px;
+    --cnd-y: 1px;
+    --cnd-w: 56px;
+    --cnd-font: 18px;
+    --cnd-line: 20px;
+    --tier-x: 144px;
+    --tier-y: 4px;
+    --marker-w: 8px;
+    --notch-x: 1px;
+    --notch-top-left: 3px;
+    --notch-top-right: 3px;
+    --notch-top-h: 5px;
+    --notch-bottom-left: 3px;
+    --notch-bottom-right: 3px;
+    --notch-bottom-h: 5px;
+    position: absolute;
+    left: 1462px;
+    top: 1000px;
+    width: var(--widget-w);
+    height: var(--widget-h);
+    opacity: 0;
+    visibility: hidden;
+    transform-origin: 0 0;
+    filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 1));
+  }
+
+  #condition-widget.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .bar-shell {
+    position: absolute;
+    left: var(--bar-x);
+    top: var(--bar-y);
+    width: var(--bar-w);
+    height: var(--bar-h);
+    border: 0;
+    background: rgba(28, 22, 15, 0.48);
+    overflow: hidden;
+  }
+
+  #trail-bar,
+  #cnd-bar,
+  #penalty-threshold-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    transform-origin: 0 50%;
+  }
+
+  #trail-bar {
+    width: 100%;
+    background: currentColor;
+    opacity: 0.28;
+    transform: scaleX(1);
+    will-change: transform;
+    z-index: 1;
+  }
+
+  #cnd-bar {
+    width: 100%;
+    background: currentColor;
+    opacity: 1;
+    transform: scaleX(1);
+    z-index: 2;
+  }
+
+  #penalty-threshold-marker {
+    width: var(--marker-w);
+    height: 100%;
+    background: transparent;
+    opacity: 0.82;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  #penalty-threshold-marker::before,
+  #penalty-threshold-marker::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  #penalty-threshold-marker::before {
+    top: 0;
+    left: var(--notch-x);
+    border-left: var(--notch-top-left) solid transparent;
+    border-right: var(--notch-top-right) solid transparent;
+    border-top: var(--notch-top-h) solid rgba(28, 22, 15, 0.94);
+  }
+
+  #penalty-threshold-marker::after {
+    bottom: 0;
+    left: var(--notch-x);
+    border-left: var(--notch-bottom-left) solid transparent;
+    border-right: var(--notch-bottom-right) solid transparent;
+    border-bottom: var(--notch-bottom-h) solid rgba(28, 22, 15, 0.94);
+  }
+
+  #cnd-text {
+    position: absolute;
+    left: var(--cnd-x);
+    top: var(--cnd-y);
+    width: var(--cnd-w);
+    /* Prevent text from visually overflowing its container width */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+    font-family: "Arial Black", "Impact", "Arial", sans-serif;
+    font-size: var(--cnd-font);
+    line-height: var(--cnd-line);
+    font-weight: 900;
+    letter-spacing: 0;
+    text-shadow: 1px 1px 0 #000;
+    display: block;
+  }
+
+  #tier-text {
+    position: absolute;
+    left: var(--tier-x);
+    top: var(--tier-y);
+    display: none;
+    font-family: "Arial Black", "Impact", "Arial", sans-serif;
+    font-size: 12px;
+    line-height: 12px;
+    font-weight: 700;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  #unjam-widget {
+    position: absolute;
+    left: 50vw;
+    top: 50vh;
+    width: 110px;
+    height: 110px;
+    margin-left: -55px;
+    margin-top: -55px;
+    opacity: 0;
+    visibility: hidden;
+    filter: drop-shadow(1.5px 1.5px 2.5px rgba(0, 0, 0, 0.9));
+    transform-origin: 55px 55px;
+  }
+
+  #unjam-widget.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #unjam-canvas {
+    width: 110px;
+    height: 110px;
+    display: block;
+  }
+
+</style>
+</head>
+<body>
+  <div id="condition-widget">
+    <div id="cnd-text">CND: 1000</div>
+    <div class="bar-shell">
+      <div id="penalty-threshold-marker"></div>
+      <div id="trail-bar"></div>
+      <div id="cnd-bar"></div>
+    </div>
+    <div id="tier-text">x2</div>
+  </div>
+
+  <div id="unjam-widget">
+    <canvas id="unjam-canvas" width="110" height="110"></canvas>
+  </div>
+
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const widget = document.getElementById("condition-widget");
+  const cndText = document.getElementById("cnd-text");
+  const tierText = document.getElementById("tier-text");
+  const cndBar = document.getElementById("cnd-bar");
+  const trailBar = document.getElementById("trail-bar");
+  const penaltyThresholdMarker = document.getElementById("penalty-threshold-marker");
+  const unjamWidget = document.getElementById("unjam-widget");
+  const unjamCanvas = document.getElementById("unjam-canvas");
+  const ctx = unjamCanvas.getContext("2d");
+
+  const REFERENCE_VIEWPORT = {
+    width: 1920,
+    height: 1080
+  };
+
+  const state = {
+    percent: 1,
+    trailPercent: 1,
+    textVisible: true,
+    widgetVisible: false,
+    unjamVisible: false,
+    widgetX: 1462,
+    widgetY: 1000,
+    widgetScale: 1.5,
+    unjamOffsetX: 0,
+    unjamOffsetY: 0,
+    unjamScale: 1,
+    unjamProgress: 0,
+    color: "#18ff00"
+  };
+  let trailTimer = 0;
+  let trailTargetPercent = 1;
+  let widgetFadeTimer = 0;
+  let widgetFadeTarget = false;
+
+  function parsePayload(payload, fallback) {
+    if (payload === undefined || payload === null || payload === "") return fallback;
+    if (typeof payload === "object") return payload;
+    try {
+      return JSON.parse(payload);
+    } catch (err) {
+      console.error("CSF payload parse failed: " + err.message);
+      return fallback;
+    }
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, Number(value)));
+  }
+
+  function valueOr(value, fallback) {
+    return value === undefined || value === null ? fallback : value;
+  }
+
+  function colorToCss(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return state.color;
+    let hex = (n & 0xffffff).toString(16);
+    while (hex.length < 6) hex = "0" + hex;
+    return "#" + hex;
+  }
+
+  function visualPercent(percent) {
+    return percent > 1 ? percent - 1 : percent;
+  }
+
+  const layoutVars = {
+    "--widget-w": 148,
+    "--widget-h": 22,
+    "--bar-x": 48,
+    "--bar-y": 5,
+    "--bar-w": 65,
+    "--bar-h": 14,
+    "--cnd-x": 0,
+    "--cnd-y": 1,
+    "--cnd-w": 56,
+    "--cnd-font": 18,
+    "--cnd-line": 20,
+    "--tier-x": 144,
+    "--tier-y": 4,
+    "--marker-w": 8,
+    "--notch-x": 1,
+    "--notch-top-left": 3,
+    "--notch-top-right": 3,
+    "--notch-top-h": 5,
+    "--notch-bottom-left": 3,
+    "--notch-bottom-right": 3,
+    "--notch-bottom-h": 5
+  };
+
+  function viewportSize() {
+    const width = window.innerWidth || document.documentElement.clientWidth || REFERENCE_VIEWPORT.width;
+    const height = window.innerHeight || document.documentElement.clientHeight || REFERENCE_VIEWPORT.height;
+    return {
+      width: Number.isFinite(width) && width > 0 ? width : REFERENCE_VIEWPORT.width,
+      height: Number.isFinite(height) && height > 0 ? height : REFERENCE_VIEWPORT.height
+    };
+  }
+
+  function resolutionScale() {
+    const viewport = viewportSize();
+    const scale = Math.min(viewport.width / REFERENCE_VIEWPORT.width, viewport.height / REFERENCE_VIEWPORT.height);
+    return Number.isFinite(scale) && scale > 0 ? scale : 1;
+  }
+
+  function anchoredCoordinate(referencePos, referenceSize, referenceViewportSize, viewportAxisSize, scale) {
+    const pos = Number(referencePos);
+    const size = Number(referenceSize);
+    if (!Number.isFinite(pos) || !Number.isFinite(size)) return 0;
+
+    const anchoredToFarEdge = pos + size / 2 >= referenceViewportSize / 2;
+    if (anchoredToFarEdge) {
+      const referenceFarMargin = referenceViewportSize - pos - size;
+      return viewportAxisSize - referenceFarMargin * scale - size * scale;
+    }
+
+    return pos * scale;
+  }
+
+  function widgetUserScale() {
+    return Number.isFinite(state.widgetScale) ? state.widgetScale : 1;
+  }
+
+  function applyScaledLayout() {
+    const scale = widgetUserScale() * resolutionScale();
+    for (const name in layoutVars) {
+      widget.style.setProperty(name, (layoutVars[name] * scale) + "px");
+    }
+  }
+
+  function applyWidgetTransform() {
+    const viewport = viewportSize();
+    const scale = resolutionScale();
+    const baseScale = widgetUserScale();
+    const referenceWidth = layoutVars["--widget-w"] * baseScale;
+    const referenceHeight = layoutVars["--widget-h"] * baseScale;
+    const x = anchoredCoordinate(state.widgetX, referenceWidth, REFERENCE_VIEWPORT.width, viewport.width, scale);
+    const y = anchoredCoordinate(state.widgetY, referenceHeight, REFERENCE_VIEWPORT.height, viewport.height, scale);
+
+    widget.style.left = x + "px";
+    widget.style.top = y + "px";
+    widget.style.transform = "none";
+    applyScaledLayout();
+  }
+
+  function applyUnjamTransform() {
+    const scale = resolutionScale();
+    unjamWidget.style.left = "calc(50vw + " + (state.unjamOffsetX * scale) + "px)";
+    unjamWidget.style.top = "calc(50vh + " + (state.unjamOffsetY * scale) + "px)";
+    unjamWidget.style.transform = "scale(" + (state.unjamScale * scale) + ")";
+  }
+
+  function renderDurability(points) {
+    const pct = clamp(state.percent, 0, 2);
+    const isTier2 = pct > 1;
+    const visiblePct = clamp(visualPercent(pct), 0, 1);
+    cndBar.style.transform = "scaleX(" + visiblePct + ")";
+    tierText.style.display = isTier2 ? "block" : "none";
+    penaltyThresholdMarker.style.display = isTier2 ? "none" : "block";
+    cndText.textContent = "CND";
+  }
+
+  function applyTrailPercent(percent) {
+    state.trailPercent = clamp(percent, 0, 2);
+    trailBar.style.transform = "scaleX(" + clamp(visualPercent(state.trailPercent), 0, 1) + ")";
+  }
+
+  function stopTrailAnimation() {
+    if (trailTimer) {
+      clearTimeout(trailTimer);
+      trailTimer = 0;
+    }
+  }
+
+  function tickTrail() {
+    trailTimer = 0;
+
+    const current = state.trailPercent;
+    const target = trailTargetPercent;
+    const delta = target - current;
+
+    if (Math.abs(delta) < 0.002) {
+      applyTrailPercent(target);
+      return;
+    }
+
+    applyTrailPercent(current + delta * 0.22);
+    trailTimer = setTimeout(tickTrail, 16);
+  }
+
+  function animateTrailTo(percent) {
+    trailTargetPercent = clamp(percent, 0, 2);
+    if (!trailTimer) {
+      trailTimer = setTimeout(tickTrail, 16);
+    }
+  }
+
+  function stopWidgetFade() {
+    if (widgetFadeTimer) {
+      clearTimeout(widgetFadeTimer);
+      widgetFadeTimer = 0;
+    }
+  }
+
+  function currentWidgetOpacity() {
+    const value = Number(widget.style.opacity);
+    if (Number.isFinite(value)) return clamp(value, 0, 1);
+    return state.widgetVisible ? 1 : 0;
+  }
+
+  function setWidgetVisibilityImmediate(visible) {
+    stopWidgetFade();
+    widgetFadeTarget = visible;
+    state.widgetVisible = visible;
+    widget.classList.toggle("visible", visible);
+    widget.style.opacity = visible ? "1" : "0";
+    widget.style.visibility = visible ? "visible" : "hidden";
+  }
+
+  function animateWidgetVisibility(visible, durationMs) {
+    stopWidgetFade();
+    widgetFadeTarget = visible;
+    state.widgetVisible = visible;
+
+    const start = currentWidgetOpacity();
+    const end = visible ? 1 : 0;
+    const configuredDuration = Number(durationMs);
+    const duration = Number.isFinite(configuredDuration) && configuredDuration > 0
+      ? clamp(configuredDuration, 80, 1200)
+      : 160;
+    const startedAt = Date.now();
+
+    widget.classList.toggle("visible", true);
+    widget.style.visibility = "visible";
+    widget.style.opacity = String(start);
+
+    function tickWidgetFade() {
+      widgetFadeTimer = 0;
+
+      if (widgetFadeTarget !== visible) {
+        return;
+      }
+
+      const elapsed = Date.now() - startedAt;
+      const t = clamp(elapsed / duration, 0, 1);
+      const eased = 1 - Math.pow(1 - t, 2);
+      const opacity = start + (end - start) * eased;
+      widget.style.opacity = String(opacity);
+
+      if (t < 1) {
+        widgetFadeTimer = setTimeout(tickWidgetFade, 16);
+        return;
+      }
+
+      widget.style.opacity = visible ? "1" : "0";
+      widget.style.visibility = visible ? "visible" : "hidden";
+      widget.classList.toggle("visible", visible);
+    }
+
+    widgetFadeTimer = setTimeout(tickWidgetFade, 16);
+  }
+
+  function drawUnjamGear(percent) {
+    const p = clamp(percent, 0, 1);
+    ctx.clearRect(0, 0, 110, 110);
+    ctx.save();
+    ctx.translate(55, 55);
+    ctx.fillStyle = state.color;
+    ctx.globalAlpha = 0.85;
+
+    const rot = -p * Math.PI;
+    const holeR = 28;
+    const gearBodyR = 42;
+    const gearTeethR = 50;
+    const tCount = 8;
+    const tOuterHalfWidth = 0.19;
+    const tInnerHalfWidth = 0.27;
+
+    ctx.beginPath();
+    for (let t = 0; t < tCount; t++) {
+      const ang = rot + t * (Math.PI * 2 / tCount);
+      const a1Inner = ang - tInnerHalfWidth;
+      const a2Inner = ang + tInnerHalfWidth;
+      const a1Outer = ang - tOuterHalfWidth;
+      const a2Outer = ang + tOuterHalfWidth;
+      const p1x = Math.cos(a1Inner) * gearBodyR;
+      const p1y = Math.sin(a1Inner) * gearBodyR;
+      if (t === 0) ctx.moveTo(p1x, p1y);
+      else ctx.lineTo(p1x, p1y);
+      ctx.lineTo(Math.cos(a1Outer) * gearTeethR, Math.sin(a1Outer) * gearTeethR);
+      ctx.lineTo(Math.cos(a2Outer) * gearTeethR, Math.sin(a2Outer) * gearTeethR);
+      ctx.lineTo(Math.cos(a2Inner) * gearBodyR, Math.sin(a2Inner) * gearBodyR);
+    }
+    ctx.closePath();
+    ctx.moveTo(holeR, 0);
+    ctx.arc(0, 0, holeR, 0, Math.PI * 2, true);
+    ctx.fill("evenodd");
+
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = state.color;
+    ctx.beginPath();
+    ctx.arc(0, 0, 25, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (p > 0) {
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, 25, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // -------------------------------------------------------------------
+  // Unjam gear self-contained animation.
+  // When setUnjamVisible({visible:true}) is called, JS drives a smooth
+  // setTimeout-based animation from 0→1 over ~1.5s, then auto-hides.
+  // The C++ UpdateUnjammingProgress() calls are still accepted as
+  // overrides if they arrive mid-animation.
+  // -------------------------------------------------------------------
+  let unjamAnimTimer = null;
+
+  function startUnjamAnimation() {
+    stopUnjamAnimation();
+    state.unjamProgress = 0;
+    drawUnjamGear(0);
+
+    const DURATION = 1440; // ms (90 frames at 16ms each)
+    const STEP = 16;
+    const startTime = Date.now();
+
+    function tick() {
+      const elapsed = Date.now() - startTime;
+      let p = clamp(elapsed / DURATION, 0, 1);
+
+      // Blend with C++ progress if it's ahead (C++ may override with higher value)
+      if (state._unjamCppProgress !== undefined && state._unjamCppProgress > p) {
+        p = state._unjamCppProgress;
+      }
+
+      state.unjamProgress = p;
+      drawUnjamGear(p);
+
+      if (p >= 1) {
+        // Auto-hide when animation completes
+        state.unjamVisible = false;
+        unjamWidget.classList.remove("visible");
+        unjamWidget.style.opacity = "0";
+        unjamWidget.style.visibility = "hidden";
+        unjamAnimTimer = null;
+        return;
+      }
+
+      unjamAnimTimer = setTimeout(tick, STEP);
+    }
+
+    unjamAnimTimer = setTimeout(tick, STEP);
+  }
+
+  function stopUnjamAnimation() {
+    if (unjamAnimTimer !== null) {
+      clearTimeout(unjamAnimTimer);
+      unjamAnimTimer = null;
+    }
+  }
+
+  window.setWidgetVisible = (payload) => {
+    const data = parsePayload(payload, {});
+    const visible = !!data.visible;
+    const animate = !!data.animate;
+    const durationMs = Number(data.durationMs);
+    if (visible === state.widgetVisible && !widgetFadeTimer) return;
+
+    if (animate) {
+      animateWidgetVisibility(visible, durationMs);
+    } else {
+      setWidgetVisibilityImmediate(visible);
+    }
+  };
+
+  window.setDurability = (payload) => {
+    const data = parsePayload(payload, {});
+    const previousPercent = state.percent;
+    const pct = clamp(valueOr(data.percent, 1), 0, 2);
+
+    state.percent = pct;
+    renderDurability(Number(valueOr(data.points, -1)));
+
+    if (pct < previousPercent) {
+      if (state.trailPercent < previousPercent || Math.abs(state.trailPercent - previousPercent) < 0.002) {
+        applyTrailPercent(previousPercent);
+      }
+      animateTrailTo(pct);
+    } else if (pct > previousPercent) {
+      stopTrailAnimation();
+      trailTargetPercent = pct;
+      applyTrailPercent(pct);
+    } else if (Math.abs(state.trailPercent - pct) > 0.001) {
+      animateTrailTo(pct);
+    }
+  };
+
+  window.setPenaltyThreshold = (payload) => {
+    const data = parsePayload(payload, {});
+    const pct = clamp(valueOr(data.percent, 0), 0, 1);
+    penaltyThresholdMarker.style.left = (pct * 100) + "%";
+  };
+
+  window.setJamThreshold = window.setPenaltyThreshold;
+
+  window.setTextVisible = (payload) => {
+    const data = parsePayload(payload, {});
+    state.textVisible = !!data.visible;
+    cndText.style.display = "block";
+  };
+
+  window.setWidgetTransform = (payload) => {
+    const data = parsePayload(payload, {});
+    state.widgetX = Number(valueOr(data.x, state.widgetX));
+    state.widgetY = Number(valueOr(data.y, state.widgetY));
+    state.widgetScale = Number(valueOr(data.scale, state.widgetScale));
+    applyWidgetTransform();
+  };
+
+  window.setCustomColor = (payload) => {
+    const data = parsePayload(payload, {});
+    state.color = colorToCss(data.color);
+    root.style.setProperty("--hud-color", state.color);
+    drawUnjamGear(state.unjamProgress);
+  };
+
+  window.setUnjamTransform = (payload) => {
+    const data = parsePayload(payload, {});
+    state.unjamOffsetX = Number(valueOr(data.x, state.unjamOffsetX));
+    state.unjamOffsetY = Number(valueOr(data.y, state.unjamOffsetY));
+    state.unjamScale = Number(valueOr(data.scale, state.unjamScale));
+    applyUnjamTransform();
+  };
+
+  window.setUnjamVisible = (payload) => {
+    const data = parsePayload(payload, {});
+    const visible = !!data.visible;
+    if (visible === state.unjamVisible) return;
+    state.unjamVisible = visible;
+
+    if (visible) {
+      state._unjamCppProgress = undefined;
+      unjamWidget.classList.toggle("visible", true);
+      unjamWidget.style.opacity = "1";
+      unjamWidget.style.visibility = "visible";
+      // Start self-contained JS animation
+      startUnjamAnimation();
+    } else {
+      stopUnjamAnimation();
+      unjamWidget.classList.remove("visible");
+      unjamWidget.style.opacity = "0";
+      unjamWidget.style.visibility = "hidden";
+    }
+  };
+
+  window.setUnjamProgress = (payload) => {
+    const data = parsePayload(payload, {});
+    state._unjamCppProgress = clamp(valueOr(data.percent, 0), 0, 1);
+    // If no JS animation is running, draw directly
+    if (unjamAnimTimer === null) {
+      state.unjamProgress = state._unjamCppProgress;
+      drawUnjamGear(state.unjamProgress);
+      // Auto-hide when C++ signals completion
+      if (state.unjamProgress >= 1 && state.unjamVisible) {
+        state.unjamVisible = false;
+        unjamWidget.classList.remove("visible");
+        unjamWidget.style.opacity = "0";
+        unjamWidget.style.visibility = "hidden";
+      }
+    }
+  };
+
+  window.warmupWidget = () => {
+    const wasVisible = state.widgetVisible;
+    const previousOpacity = widget.style.opacity;
+    const previousVisibility = widget.style.visibility;
+    const previousClassVisible = widget.classList.contains("visible");
+
+    stopWidgetFade();
+    renderDurability(Number(state.points || -1));
+    drawUnjamGear(state.unjamProgress);
+
+    widget.classList.toggle("visible", true);
+    widget.style.visibility = "visible";
+    widget.style.opacity = "0.001";
+    // Force one layout/paint cycle while the view itself is already shown.
+    // This moves bitmap/D3D texture creation away from first weapon draw.
+    void widget.offsetHeight;
+
+    setTimeout(() => {
+      if (wasVisible) {
+        widget.classList.toggle("visible", true);
+        widget.style.visibility = "visible";
+        widget.style.opacity = previousOpacity && previousOpacity !== "0" ? previousOpacity : "1";
+        return;
+      }
+
+      widget.classList.toggle("visible", previousClassVisible);
+      widget.style.opacity = previousOpacity || "0";
+      widget.style.visibility = previousVisibility || "hidden";
+      state.widgetVisible = false;
+    }, 64);
+  };
+
+  // -------------------------------------------------------------------
+  // PrismaUI connection state.
+  // In Prisma 2.0 (CEF backend) the view lives as an iframe inside a
+  // shared CEF shell. The window.prisma bridge is injected by the shell
+  // and may not be available synchronously at script parse time, so we
+  // defer the standalone preview decision to avoid false activation.
+  //
+  // Lifecycle:
+  //   1. Page loads, deferredStandaloneTimeout starts (1500ms)
+  //   2. If C++ calls init() before timeout → connected, cancel standalone
+  //   3. If timeout expires without init() → standalone preview mode
+  // -------------------------------------------------------------------
+  let prismaConnected = false;
+  let deferredStandaloneTimer = null;
+
+  window.addEventListener("resize", () => {
+    applyWidgetTransform();
+    applyUnjamTransform();
+  });
+
+  // -------------------------------------------------------------------
+  // window.init() — lifecycle callback called by the C++ OnDomReady
+  // handler via InteropCall("init", ...). Signals that PrismaUI is
+  // connected and the view is fully ready.
+  //
+  // This also serves as a safety reset: if the standalone timeout fired
+  // during loading (before init() arrived), we force-hide everything
+  // so the C++ side takes full control.
+  // -------------------------------------------------------------------
+  window.init = function() {
+    prismaConnected = true;
+    if (deferredStandaloneTimer !== null) {
+      clearTimeout(deferredStandaloneTimer);
+      deferredStandaloneTimer = null;
+    }
+    // Safety: force-stop gear animation and hide both widgets
+    // (in case standalone preview activated during loading screen).
+    stopUnjamAnimation();
+    state.unjamVisible = false;
+    unjamWidget.classList.remove("visible");
+    unjamWidget.style.opacity = "0";
+    unjamWidget.style.visibility = "hidden";
+    state.widgetVisible = false;
+    widget.classList.remove("visible");
+    widget.style.opacity = "0";
+    widget.style.visibility = "hidden";
+    console.log("[CSF] PrismaUI init() — connected, window.prisma available:", !!window.prisma);
+  };
+
+  // -------------------------------------------------------------------
+  // Deferred standalone preview mode — activates after a grace period
+  // if no init() was called (meaning we're outside PrismaUI).
+  // -------------------------------------------------------------------
+  deferredStandaloneTimer = setTimeout(() => {
+    if (prismaConnected) return;
+
+    window.setCustomColor({ color: 0x18ff00 });
+    window.setDurability({ percent: 0.72, points: 720 });
+    window.setPenaltyThreshold({ percent: 0.75 });
+    window.setUnjamTransform({ x: 0, y: 0, scale: 1 });
+    window.setUnjamProgress({ percent: 0.35 });
+    prismaConnected = true;
+    console.log("[CSF] Standalone preview mode — debug panel enabled");
+  }, 1500);
+
+  console.log("[CSF] Condition widget view ready");
+})();
+</script>
+</body>
+</html>
