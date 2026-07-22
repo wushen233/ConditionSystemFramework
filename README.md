@@ -32,7 +32,7 @@ public source license applies only to files contained in this repository.
 - Repair kits and jury-rigging systems
 - JSON-driven weapon, armor, ammo, modifier, exclusion, and repair rules
 - Public durability interface for other F4SE plugins
-- Optional ItemIntegrationFramework and Prisma UI F4 integration
+- ItemIntegrationFramework integration and optional Prisma UI F4 integration
 - Multiple Fallout 4 runtime generations through CommonLibF4
 
 ## UI source
@@ -56,21 +56,25 @@ projects and assets; those third-party assets are not included here.
 - Visual Studio 2022 Build Tools with Desktop development with C++
 - Git
 - XMake 3.0 or later
+- [Dear-Modding-FO4/commonlibf4](https://github.com/Dear-Modding-FO4/commonlibf4)
 - Fallout 4 Script Extender
+- [ItemIntegrationFramework](https://github.com/wushen233/ItemIntegrationFramework)
 
-Runtime integrations such as ItemIntegrationFramework and Prisma UI F4 are
-optional and are discovered by the plugin at runtime.
+ItemIntegrationFramework is a required runtime dependency. Prisma UI F4 is an
+optional integration and is discovered by the plugin at runtime.
 
 ## Build
 
-The build script downloads the pinned CommonLibF4 revision into `.deps/` when
-needed, configures XMake, and builds the plugin:
+This project must be built against the
+[Dear-Modding-FO4 CommonLibF4 fork](https://github.com/Dear-Modding-FO4/commonlibf4).
+The build script downloads the pinned revision from that fork into `.deps/`
+when needed, configures XMake, and builds the plugin:
 
 ```powershell
 .\scripts\build.ps1
 ```
 
-To use an existing CommonLibF4 checkout:
+To use an existing checkout of the same CommonLibF4 fork:
 
 ```powershell
 .\scripts\build.ps1 -CommonLibF4Path D:\path\to\commonlibf4
