@@ -12,7 +12,8 @@ assets.
 `ui/actionscript/fallui-patches` contains ActionScript menu files modified for
 ConditionSystemFramework interoperability. The CSF additions are released as
 source, but the underlying Fallout 4 and FallUI portions remain the property of
-their respective authors and are not relicensed by the repository MIT License.
+their respective authors and are not relicensed by the repository GPL-3.0-only
+license.
 No FallUI fonts, icons, FLA projects, or compiled SWF files are included.
 
 ### Prisma UI 2.0
@@ -53,7 +54,7 @@ at commit `f0b1670ee9caac2e349497f6f3c08a69633a8ea7`. `commonlib-shared` is
 distributed under GPL-3.0 with a Modding Exception. The exception permits
 Modded Code to link with `commonlib-shared` without causing that Modded Code to
 be covered by the GPL. Project-authored source in this repository therefore
-remains under the repository MIT License.
+is distributed under the repository GPL-3.0-only license.
 
 Copies of the applicable GPL-3.0 text and Modding Exception are retained in
 `licenses/commonlib-shared/LICENSE` and `licenses/commonlib-shared/EXCEPTIONS`.
