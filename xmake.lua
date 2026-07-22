@@ -24,6 +24,7 @@ add_requires("microsoft-detours 2023.6.8")
 add_requires("minhook v1.3.4")
 
 target("ConditionSystemFramework")
+    set_version("1.0.8")
     add_rules("commonlibf4.plugin", {
         name = "ConditionSystemFramework",
         author = "h_wushen",
