@@ -1,7 +1,7 @@
 set_xmakever("3.0.0")
 
 set_project("ConditionSystemFramework")
-set_version("1.0.0")
+set_version("1.0.8")
 set_languages("c++23")
 set_warnings("allextra")
 set_encodings("utf-8")
@@ -28,7 +28,7 @@ target("ConditionSystemFramework")
         name = "ConditionSystemFramework",
         author = "h_wushen",
         description = "Native durability and repair framework for Fallout 4",
-        version = "1.0.0"
+        version = "1.0.8"
     })
 
     add_packages("simpleini", "nlohmann_json", "tinyxml2", "imgui", "microsoft-detours", "minhook")
@@ -43,5 +43,5 @@ target("ConditionSystemFramework")
         'PLUGIN_NAME="ConditionSystemFramework"',
         "PLUGIN_VERSION_MAJOR=1",
         "PLUGIN_VERSION_MINOR=0",
-        "PLUGIN_VERSION_PATCH=0"
+        "PLUGIN_VERSION_PATCH=8"
     )

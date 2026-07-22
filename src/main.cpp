@@ -14,7 +14,7 @@
 #define PLUGIN_NAME "ConditionSystemFramework"
 #define PLUGIN_VERSION_MAJOR 1
 #define PLUGIN_VERSION_MINOR 0
-#define PLUGIN_VERSION_PATCH 0
+#define PLUGIN_VERSION_PATCH 8
 
 void OnGameExit() { ConditionSystem::g_isGameRunning.store(false); }
 
