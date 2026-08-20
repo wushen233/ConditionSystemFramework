@@ -7,27 +7,40 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$pinnedCommonLibCommit = 'ca31eeb6c7353555973bc351c6733d6492f2c66e'
 
 if ([string]::IsNullOrWhiteSpace($CommonLibF4Path)) {
-    $CommonLibF4Path = Join-Path $projectRoot '.deps\commonlibf4'
+    $CommonLibF4Path = [Environment]::GetEnvironmentVariable('COMMONLIBF4_PATH', 'Process')
 }
-$CommonLibF4Path = [System.IO.Path]::GetFullPath($CommonLibF4Path)
 
-if (-not (Test-Path -LiteralPath (Join-Path $CommonLibF4Path 'xmake.lua'))) {
-    if ($SkipDependencyBootstrap) {
-        throw "CommonLibF4 was not found at $CommonLibF4Path"
+if ([string]::IsNullOrWhiteSpace($CommonLibF4Path)) {
+    $workspaceRoot = $projectRoot
+    for ($i = 0; $i -lt 8 -and -not (Test-Path -LiteralPath (Join-Path $workspaceRoot 'workspace.json')); $i++) {
+        $parent = Split-Path -Parent $workspaceRoot
+        if ([string]::IsNullOrWhiteSpace($parent) -or $parent -eq $workspaceRoot) {
+            $workspaceRoot = $null
+            break
+        }
+        $workspaceRoot = $parent
     }
 
-    New-Item -ItemType Directory -Path (Split-Path -Parent $CommonLibF4Path) -Force | Out-Null
-    & git clone --recurse-submodules https://github.com/Dear-Modding-FO4/commonlibf4.git $CommonLibF4Path
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to clone CommonLibF4.' }
+    if ($null -ne $workspaceRoot) {
+        $workspace = Get-Content -LiteralPath (Join-Path $workspaceRoot 'workspace.json') -Raw | ConvertFrom-Json
+        $profileName = [string]$workspace.defaultProfiles.commonlibf4
+        $profileProperty = $workspace.cppToolchains.PSObject.Properties[$profileName]
+        if ($null -eq $profileProperty) {
+            throw "Workspace CommonLibF4 profile is not defined: $profileName"
+        }
+        $CommonLibF4Path = Join-Path $workspaceRoot ([string]$profileProperty.Value.path)
+    }
+}
 
-    & git -C $CommonLibF4Path checkout $pinnedCommonLibCommit
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to check out the pinned CommonLibF4 revision.' }
+if ([string]::IsNullOrWhiteSpace($CommonLibF4Path)) {
+    throw 'Set COMMONLIBF4_PATH, pass -CommonLibF4Path, or run this script inside the configured workspace.'
+}
 
-    & git -C $CommonLibF4Path submodule update --init --recursive
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize CommonLibF4 submodules.' }
+$CommonLibF4Path = [System.IO.Path]::GetFullPath($CommonLibF4Path)
+if (-not (Test-Path -LiteralPath (Join-Path $CommonLibF4Path 'xmake.lua'))) {
+    throw "CommonLibF4 checkout was not found at $CommonLibF4Path"
 }
 
 $env:COMMONLIBF4_PATH = $CommonLibF4Path
