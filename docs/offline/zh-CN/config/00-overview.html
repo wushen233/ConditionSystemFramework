@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>配置总览</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/00-overview.html">English</a>
+  </header>
+  <main>
+<h1>CSF 配置总览</h1>
+<p>本文档只描述当前 <code>ConditionSystemFramework</code> 源码实际读取的配置。运行时配置根目录为：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/
+</code></pre>
+<p>JSON 文件按 JSONC 读取，因此可以使用 <code>//</code> 和 <code>/* ... */</code> 注释。配置修改后通常需要完全退出并重新启动游戏，才能排除缓存和旧 Provider 的影响。</p>
+<h2>模块目录</h2>
+<p>| 文档 | 运行时目录或文件 | 作用 |
+|---|---|---|
+| <a href="01-classifications.html">分类</a> | <code>Classifications/</code> | 为武器、护甲建立可供其他模块使用的分类事实 |
+| <a href="02-durability-consumption.html">耐久消耗</a> | <code>Durability/Consumption/</code> | 设置基础耐久、磨损、卡壳、弹药、OMOD 和技能修正 |
+| <a href="03-damage-formula.html">伤害公式</a> | <code>Durability/DamageFormula/</code> | 设置攻击伤害如何转换成护甲耐久损耗 |
+| <a href="04-repair.html">维修</a> | <code>Repair/</code> | 设置混修、过量维修和修理包 |
+| <a href="05-loot.html">战利品</a> | <code>Loot/</code> | 设置新获得物品的随机初始状况和技能奖励 |
+| <a href="06-item-cards.html">物品卡片</a> | <code>ItemUICards.json</code> | 设置 IIF 物品卡片中的 CND 行锚点 |
+| <a href="07-provider-selection.html">Provider 选择</a> | 各模块的 <code>ProviderSelection.json</code> | 说明哪些配置会合并，哪些配置只选择一个 |
+| <a href="08-mcm-and-ini.html">MCM 与 INI</a> | <code>MCM/Config/ConditionSystemFramework/settings.ini</code> | 运行时总开关、数值和小部件设置 |</p>
+<h2>加载模型</h2>
+<p>CSF 的配置不是一种统一的“后加载覆盖前加载”模型，而是两种模型并存：</p>
+<ol>
+<li><code>Classifications/</code> 是贡献式 Provider。所有 <code>requires</code> 中插件都已加载的分类文件都会读取，然后按照分类组和优先级合并。</li>
+<li><code>Repair/</code> 和 <code>Loot/</code> 的 Provider 是单选式。每个子模块只会选出一个 Provider 文件。</li>
+<li><code>Durability/Consumption/</code> 下的 profile 会全部读取。Profile 是否生效取决于匹配条件；同类 profile 通过 priority 和读取顺序确定结果。</li>
+<li><code>ItemUICards.json</code> 和 MCM INI 各自只有一个有效配置文件。</li>
+</ol>
+<p>配置文件本身必须放在项目的 <code>data/</code> 镜像中。开发运行时由 MO2 overlay 提供，发布时再从同一个 <code>data/</code> 镜像打包。</p>
+<h2>FormID 写法</h2>
+<p>通用 <code>formIDs</code> 字段支持两种写法：</p>
+<pre><code class="language-jsonc">// 数组写法：每个字符串是 Plugin|FormID
+&quot;formIDs&quot;: [
+  &quot;Fallout4.esm|0001A2B3&quot;,
+  &quot;SomeMod.esp|000123&quot;
+]
+
+// 对象写法：插件名作为键，本地 FormID 作为数组值
+&quot;formIDs&quot;: {
+  &quot;SomeMod.esp&quot;: [&quot;003&quot;, &quot;004&quot;]
+}
+</code></pre>
+<p>CSF 会根据当前已加载插件解析普通插件和 ESL/ESL-flagged 插件。写 ESL 记录时可以使用插件本地记录号，也可以使用完整的 <code>FE</code> FormID。插件没有加载时，该引用解析失败，相关 profile 或 Provider 不会按预期生效。</p>
+<p>分类 Schema 3 的 <code>list</code> 字段不是直接物品 FormID，而是指向插件中的 FLST：</p>
+<pre><code class="language-jsonc">&quot;list&quot;: &quot;MyClassificationPatch.esp|0x000800&quot;
+</code></pre>
+<p>FLST 的成员才是 KYWD、OMOD、WEAP 或 ARMO。精确排除单个武器或护甲时，应把对应 WEAP/ARMO 放进 <code>Weapon.Flag.Ignore</code> 或 <code>Armor.Flag.Ignore</code> 的 FLST；详见<a href="01-classifications.html">分类文档</a>。</p>
+<h2>技能与属性引用</h2>
+<p><code>RequiredSkill</code>、<code>DisplaySkill</code> 和战利品技能使用以下字段：</p>
+<pre><code class="language-jsonc">{
+  &quot;Type&quot;: &quot;AV&quot;,                 // AV、Perk 或 Global
+  &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;FormID&quot;: &quot;0xFA0&quot;,
+  &quot;MinRank&quot;: 1.0,
+  &quot;ScaleFactor&quot;: 1.0
+}
+</code></pre>
+<p>也可以使用 <code>EditorID</code> 代替 <code>Plugin</code> 和 <code>FormID</code>。<code>AV</code> 读取 Actor Value，<code>Perk</code> 读取玩家当前 Perk Rank，<code>Global</code> 读取 Global 的值。<code>ScaleFactor</code> 只改变读出的数值，不改变游戏内技能本身。</p>
+<h2>配置生效排查顺序</h2>
+<ol>
+<li>确认文件位于正确的模块目录，扩展名为 <code>.json</code>，而不是放在 <code>docs/</code>。</li>
+<li>确认 JSONC 语法有效，特别是逗号、字符串和注释位置。</li>
+<li>确认 <code>requires</code> 或 <code>RequiredPlugin</code> 中的插件名与实际加载名完全一致。</li>
+<li>Provider 文件名是否符合规则：单选 Provider 必须是 <code>&lt;RequiredPlugin&gt;.json</code>。</li>
+<li>打开 <code>Debug/bEnableLogging</code>，查看 <code>ConditionSystemFramework.log</code> 中的 Provider、profile 和分类日志。</li>
+<li>完全重启游戏后再测试；分类结果、物品标记和部分 UI 状态会缓存。</li>
+</ol>
+<h2>当前配置的边界</h2>
+<p>旧版 <code>Rules/</code>、旧版 <code>Exclusions/</code>、<code>TargetKeywords</code>、<code>MatchCategories</code> 和 <code>RankLimits</code> 不属于当前活动 loader 的统一字段。迁移旧配置时应按模块文档转换，而不是把旧文件直接复制到新目录。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

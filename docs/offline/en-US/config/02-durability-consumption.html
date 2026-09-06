@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Durability Consumption</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/02-durability-consumption.html">中文</a>
+  </header>
+  <main>
+<h1>Durability Consumption Module</h1>
+<p>Base directory:</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Durability/Consumption/
+</code></pre>
+<p>This module controls how items wear down. It does not define what an item is; that comes from the <a href="01-classifications.html">Classifications</a> module.</p>
+<h2>Shared Profile Matching</h2>
+<p><code>Weapons/*.json</code>, <code>Armors/*.json</code>, <code>Ammos/*.json</code>, <code>Modifiers/*.json</code> and <code>Omods/*.json</code> use the following general shape:</p>
+<pre><code class="language-jsonc">{
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;My Profile&quot;,
+      &quot;priority&quot;: 100,
+      &quot;formIDs&quot;: [&quot;MyMod.esp|000123&quot;],
+      &quot;keywords&quot;: [[&quot;Keyword_A&quot;, &quot;Keyword_B&quot;]]
+    }
+  ]
+}
+</code></pre>
+<p><code>formIDs</code> accepts an array or a plugin-keyed object. <code>keywords</code> uses outer OR and inner AND semantics: the example matches when both <code>Keyword_A</code> and <code>Keyword_B</code> are present, or when another keyword group matches.</p>
+<p>For weapon and armor base profiles, the effective order is:</p>
+<ol>
+<li><code>AppliesTo</code> category predicates.</li>
+<li>Exact FormID.</li>
+<li>Keyword AND groups.</li>
+<li>Default profile.</li>
+</ol>
+<p>Profiles with <code>AppliesTo</code> are sorted by priority. Use explicit priorities and file organization when several FormID or keyword profiles could match.</p>
+<h2>Weapon Base Profiles</h2>
+<p>Path: <code>Durability/Consumption/Weapons/*.json</code></p>
+<p>| Field | Purpose |
+|---|---|
+| <code>name</code> | Name used in logs and diagnostics |
+| <code>priority</code> | Profile ordering priority |
+| <code>maxDurability</code> | Base maximum durability points |
+| <code>degradeRate</code> | Base wear per valid shot or melee attack |
+| <code>canJam</code> | Allows the automatic fault mechanism |
+| <code>mechanism</code> | <code>auto</code>, <code>ballistic</code>, <code>energy</code>, <code>overheat</code> or <code>none</code> |
+| <code>isExcluded</code> | Skips the matched weapon in durability-loss paths; not a full exclusion |
+| <code>AppliesTo</code> | Category predicate |</p>
+<p><code>mechanism: auto</code> lets the code determine ballistic jamming, energy faults or overheating from the weapon and ammo. Explicit <code>none</code> disables the fault mechanism; explicit <code>overheat</code> routes the weapon to the heat system.</p>
+<p>The current <code>VanillaWeapons.json</code> selects a base profile from Handling, then applies Family and Configuration adjustments through CategoryModifiers.</p>
+<h2>Armor Base Profiles</h2>
+<p>Path: <code>Durability/Consumption/Armors/*.json</code></p>
+<p>| Field | Purpose |
+|---|---|
+| <code>maxDurability</code> | Base maximum durability points |
+| <code>useFlatDegrade</code> | Uses fixed wear per hit instead of the damage formula |
+| <code>degradeRate</code> | Fixed wear value or special profile base value |
+| <code>isExcluded</code> | Skips the matched armor in durability-loss paths; not a full exclusion |
+| <code>keywords</code> | Base ARMO keyword AND groups |
+| <code>AppliesTo</code> | Material, Region, Grade and other categories |</p>
+<p>Normal armor generally gets its base maximum from Material profiles. Region and Grade are added through CategoryModifiers.</p>
+<h2>Ammo Profiles</h2>
+<p>Path: <code>Durability/Consumption/Ammos/*.json</code></p>
+<pre><code class="language-jsonc">{
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;Armor Piercing&quot;,
+      &quot;weaponWearMult&quot;: 1.5,
+      &quot;armorDamageMult&quot;: 2.0,
+      &quot;formIDs&quot;: [&quot;MyAmmo.esp|000123&quot;]
+    }
+  ]
+}
+</code></pre>
+<ul>
+<li><code>weaponWearMult</code> multiplies weapon wear.</li>
+<li><code>armorDamageMult</code> multiplies the impact dealt to armor durability.</li>
+<li>Ammo profiles do not define weapon mechanisms. An ammo wear profile alone cannot turn a normal 10mm pistol into an overheating weapon.</li>
+</ul>
+<h2>CategoryModifiers</h2>
+<p>Path: <code>Durability/Consumption/CategoryModifiers/*.json</code>.</p>
+<p>The root key is <code>modifiers</code>. Every matching modifier is applied:</p>
+<pre><code class="language-text">maxDurability = maxDurability * maxDurabilityMult
+degradeRate   = degradeRate * degradeMult + degradeRateFlat
+</code></pre>
+<p><code>maxDurabilityMult</code> and <code>degradeMult</code> multiply; <code>degradeRateFlat</code> values add. <code>Domain</code> may be <code>Weapon</code>, <code>Armor</code> or <code>Any</code>. <code>AppliesTo</code> uses <code>all</code>, <code>any</code> and <code>none</code>.</p>
+<p>The current <code>VanillaCategoryModifiers.json</code> adjusts weapon Families, weapon Configurations, armor Grades and armor Regions.</p>
+<h2>OMOD and Legendary Modifiers</h2>
+<p>Paths:</p>
+<pre><code class="language-text">Durability/Consumption/Omods/*.json
+Durability/Consumption/Modifiers/*.json
+</code></pre>
+<p>OMOD fields:</p>
+<ul>
+<li><code>degradeMult</code>: wear multiplier; all installed OMOD values multiply.</li>
+<li><code>degradeRateFlat</code>: fixed wear; all installed OMOD values add.</li>
+<li><code>maxDurabilityMult</code>: maximum durability multiplier; all installed OMOD values multiply.</li>
+<li><code>immuneToJam</code>: any matching OMOD can grant jam immunity.</li>
+</ul>
+<p>Legendary <code>ModifierProfile</code> uses the same <code>degradeMult</code> and <code>immuneToJam</code> concepts, but matches the legendary modifier instead of a normal OMOD.</p>
+<h2>SkillModifiers</h2>
+<p>Path: <code>Durability/Consumption/SkillModifiers/*.json</code>.</p>
+<p>Skill durability modifiers change wear; they do not grant repair permission:</p>
+<pre><code class="language-jsonc">{
+  &quot;modifiers&quot;: [
+    {
+      &quot;name&quot;: &quot;BuiltToDestroy&quot;,
+      &quot;Domain&quot;: &quot;Weapon&quot;,
+      &quot;RequiredSkill&quot;: {
+        &quot;Type&quot;: &quot;Perk&quot;,
+        &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;,
+        &quot;FormID&quot;: &quot;0xD166&quot;,
+        &quot;MinRank&quot;: 1
+      },
+      &quot;SkillThresholds&quot;: [
+        { &quot;threshold&quot;: 1.0, &quot;wearMultiplier&quot;: 1.15, &quot;wearRateFlat&quot;: 0.0 }
+      ],
+      &quot;AppliesTo&quot;: { &quot;all&quot;: [&quot;weapon&quot;] }
+    }
+  ]
+}
+</code></pre>
+<p>For each matching rule, runtime selects the highest threshold that does not exceed the current skill value. The selected multipliers multiply together and the selected flat values add. The current Classic Skill System file implements Built to Destroy's +15% weapon wear while leaving its critical-hit effect to the skill system.</p>
+<h2>Weapon Wear Pipeline</h2>
+<p>The effective wear is approximately:</p>
+<pre><code class="language-text">base degradeRate
+  * legendary/OMOD degradeMult
+  * ammo weaponWearMult
+  * SkillModifiers wearMultiplier
+  + OMOD degradeRateFlat
+  + SkillModifiers wearRateFlat
+  * MCM fWeaponWearMultiplier
+  * overheat multiplier, when the current weapon is overheated
+</code></pre>
+<p>Armor wear starts with the damage formula result and then applies OMOD, skill and MCM armor-wear modifiers.</p>
+<h2><code>isExcluded</code> Scope</h2>
+<p><code>WeaponProfile</code> and <code>ArmorProfile</code> support <code>isExcluded: true</code> together with exact <code>formIDs</code>. The current source uses this to skip relevant durability-loss and some fault/loot processing paths. It is not a classification marker and does not replace <code>Weapon.Flag.Ignore</code> or <code>Armor.Flag.Ignore</code>.</p>
+<p>If the goal is to remove an item from all CSF processing, including durability UI and repair target/donor lists, use an Ignore FLST from the Classifications module. Use <code>isExcluded</code> when the goal is specifically to stop wear.</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

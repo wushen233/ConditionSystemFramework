@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>物品卡片模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/06-item-cards.html">English</a>
+  </header>
+  <main>
+<h1>物品卡片模块</h1>
+<p>配置文件：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/ItemUICards.json
+</code></pre>
+<p>该文件只控制 IIF 物品卡片里的 CND 行位置，不控制 HUD CND 小部件，也不决定物品是否进入耐久系统。</p>
+<h2>当前结构</h2>
+<pre><code class="language-jsonc">{
+  &quot;ItemUICards&quot;: {
+    &quot;CND&quot;: {
+      &quot;priority&quot;: 0,
+      &quot;anchorTarget&quot;: &quot;$ammo&quot;,
+      &quot;anchorMode&quot;: &quot;after&quot;,
+      &quot;fallbackAnchorTarget&quot;: &quot;TOP&quot;,
+      &quot;fallbackAnchorMode&quot;: &quot;after&quot;
+    }
+  }
+}
+</code></pre>
+<p>字段：</p>
+<p>| 字段 | 作用 |
+|---|---|
+| <code>priority</code> | 多个卡片行注册时的排序优先级 |
+| <code>anchorTarget</code> | 首选锚点，例如 <code>$ammo</code> |
+| <code>anchorMode</code> | 相对首选锚点插入的位置，当前使用 <code>after</code> |
+| <code>fallbackAnchorTarget</code> | 首选锚点不存在时使用的锚点 |
+| <code>fallbackAnchorMode</code> | 备用锚点的插入位置 |</p>
+<h2>常见调整</h2>
+<p>若某个物品卡片没有弹药行，CSF 会使用 <code>fallbackAnchorTarget</code>。因此调整 CND 行位置时优先修改锚点，不要在 SWF 中写死坐标。</p>
+<p>这个模块依赖 Item Integration Framework 的物品卡片接口。IIF DLL 没有加载时，CND 行不会注册；这和工作台维修按钮以及 HUD 小部件是不同的接口问题。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

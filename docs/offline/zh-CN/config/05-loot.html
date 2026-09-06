@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>战利品模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/05-loot.html">English</a>
+  </header>
+  <main>
+<h1>战利品模块</h1>
+<p>运行时目录：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Loot/
+</code></pre>
+<p>当前活动子模块是 <code>Loot/ConditionBonus/</code>。<code>Loot/InitialCondition/</code> 目前没有活动 JSON，初始耐久的随机区间由 MCM 控制。</p>
+<h2>Provider 选择</h2>
+<p><code>Loot/ConditionBonus/</code> 每次只选择一个 Provider。文件必须命名为：</p>
+<pre><code class="language-text">&lt;RequiredPlugin&gt;.json
+</code></pre>
+<p>插件未加载时跳过该 Provider。当前 <code>Loot/ProviderSelection.json</code> 使用 <code>PluginLoadOrderFirst</code>：先比较 <code>RequiredPlugin</code> 的加载顺序，再比较 <code>ProviderPriority</code>。</p>
+<h2>ConditionBonus</h2>
+<p>当前文件 <code>Loot/ConditionBonus/Fallout4.esm.json</code> 的结构：</p>
+<pre><code class="language-jsonc">{
+  &quot;LootBonusRule&quot;: {
+    &quot;GlobalCap&quot;: 2.0,
+    &quot;RequiredSkill&quot;: {
+      &quot;Type&quot;: &quot;AV&quot;,
+      &quot;Plugin&quot;: &quot;Fallout4.esm&quot;,
+      &quot;FormID&quot;: &quot;0x000002C8&quot;,
+      &quot;ScaleFactor&quot;: 100.0
+    },
+    &quot;Tiers&quot;: [
+      {
+        &quot;minLevel&quot;: 5.0,
+        &quot;hitChance&quot;: 2.0,
+        &quot;bonusMin&quot;: 0.05,
+        &quot;bonusMax&quot;: 0.15
+      }
+    ]
+  },
+  &quot;RequiredPlugin&quot;: &quot;Fallout4.esm&quot;,
+  &quot;ProviderPriority&quot;: 0,
+  &quot;schemaVersion&quot;: 1,
+  &quot;module&quot;: &quot;Loot.ConditionBonus&quot;
+}
+</code></pre>
+<p>字段：</p>
+<p>| 字段 | 作用 |
+|---|---|
+| <code>GlobalCap</code> | 加成后的全局最高状况倍数，例如 <code>2.0</code> 表示最多 200% |
+| <code>RequiredSkill</code> | 读取玩家技能或属性 |
+| <code>minLevel</code> | 该档位的最低技能值 |
+| <code>hitChance</code> | 触发本档位的百分比概率，范围按 0 到 100 处理 |
+| <code>bonusMin</code> / <code>bonusMax</code> | 触发后随机增加的状况比例 |</p>
+<p>运行时会使用当前技能值可达到的最高 <code>minLevel</code> 档位。当前数组应按 <code>minLevel</code> 从低到高排列，最后一个满足条件的档位是生效档位。</p>
+<p>流程是：</p>
+<ol>
+<li>物品本身必须由 CSF 管理耐久。</li>
+<li>读取 <code>RequiredSkill</code>。</li>
+<li>选择技能达到的最高档位。</li>
+<li>先按 <code>hitChance</code> 投骰。</li>
+<li>成功后在 <code>bonusMin</code> 到 <code>bonusMax</code> 之间随机增加状况。</li>
+<li>最终结果受 <code>GlobalCap</code> 和 MCM <code>bEnableOverCondition</code> 限制。</li>
+</ol>
+<p>该模块只影响新获得物品的初始状况，不影响已有物品的维修效率和战斗磨损。</p>
+<h2>初始状况与 MCM</h2>
+<p>当 <code>bRandomLootDurability=1</code> 时：</p>
+<ul>
+<li>武器在 <code>fWeaponLootDurabilityMin</code> 和 <code>fWeaponLootDurabilityMax</code> 之间随机。</li>
+<li>普通护甲在 <code>fArmorLootDurabilityMin</code> 和 <code>fArmorLootDurabilityMax</code> 之间随机。</li>
+<li>ConditionBonus 在随机结果上追加技能奖励。</li>
+</ul>
+<p><code>LootBonus_Perk_Example.json.disabled</code> 不是活动配置，扩展名仍为 <code>.disabled</code> 时不会被 loader 读取。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

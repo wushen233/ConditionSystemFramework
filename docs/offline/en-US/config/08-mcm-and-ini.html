@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCM and INI</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/08-mcm-and-ini.html">中文</a>
+  </header>
+  <main>
+<h1>MCM and INI Module</h1>
+<p>Runtime user configuration:</p>
+<pre><code class="language-text">Data/MCM/Config/ConditionSystemFramework/settings.ini
+</code></pre>
+<p>The project default template is:</p>
+<pre><code class="language-text">projects/ConditionSystemFramework/data/MCM/Config/ConditionSystemFramework/settings.ini
+</code></pre>
+<p>The MO2 overwrite or a user-specific configuration takes precedence over the project default. MCM writes values back to the user configuration; after manual edits, reopen MCM or restart the game to trigger a reload.</p>
+<h2>General</h2>
+<p>| Key | Purpose |
+|---|---|
+| <code>bEnable</code> | CSF master switch |
+| <code>fWidgetX</code> / <code>fWidgetY</code> | SWF CND widget position |
+| <code>fWidgetScale</code> | SWF CND widget scale |
+| <code>iWidgetType</code> | Main CND backend: <code>0</code> PrismaUI, <code>1</code> SWF |
+| <code>iSwfCndStyle</code> | SWF CND style selection |</p>
+<p>The unjam and heat widgets can select their backends independently through <code>iUnjamWidgetType</code> and <code>iHeatWidgetType</code>. If any widget uses PrismaUI, CSF loads the PrismaUI backend.</p>
+<h2>UI</h2>
+<p>| Key | Purpose |
+|---|---|
+| <code>bShowWidgetText</code> | Show widget text |
+| <code>iUnjamWidgetType</code> | Unjam/fault widget backend |
+| <code>iHeatWidgetType</code> | Heat widget backend |
+| <code>bShowItemCardCND</code> | Show CND on item cards |
+| <code>iItemCardCNDPosition</code> | Item-card CND position |
+| <code>fUnjamX/Y/Scale</code> | Unjam widget position and scale |
+| <code>fHeatWidgetX/Y/Scale</code> | Heat widget position and scale |
+| <code>fJuryStatsOffsetX/Y</code> | Jury Rigging stats offset |
+| <code>fJuryStatsRowSpacing</code> | Jury Rigging stats row spacing |
+| <code>iJuryStatsColorMode</code> | Jury stats color mode |
+| <code>iCndColorMode</code> | CND widget color mode |
+| <code>iUnjamColorMode</code> | Unjam widget color mode |
+| <code>iHeatColorMode</code> | Heat widget color mode |
+| <code>bUseCustomColor</code> | Enable the custom color value |
+| <code>sCustomColor</code> | Six-digit hexadecimal RGB color, for example <code>FFFFFF</code> |</p>
+<p>Each widget reads its own color mode. HUD-following and custom-color modes are supported. Heat-stage colors and the overheated-state override are special states and are not fully replaced by the normal color mode.</p>
+<h2>Mechanics: Switches and Initial Condition</h2>
+<p>| Key | Purpose |
+|---|---|
+| <code>bRandomLootDurability</code> | Randomize initial condition for new weapons and armor |
+| <code>bEnableWeaponCondition</code> | Weapon durability system |
+| <code>bEnableArmorCondition</code> | Normal armor durability system |
+| <code>bEnableOverCondition</code> | Allow condition above 100% |
+| <code>bDialogueFullDurability</code> | Keep dialogue-related new items at full condition |
+| <code>fWeaponLootDurabilityMin/Max</code> | Weapon initial condition range |
+| <code>fArmorLootDurabilityMin/Max</code> | Armor initial condition range |
+| <code>fWeaponWearMultiplier</code> | Total weapon-wear multiplier; defaults to 1.0 when absent |
+| <code>fArmorWearMultiplier</code> | Total armor-wear multiplier; defaults to 1.0 when absent |
+| <code>fRepairMaterialCostMultiplier</code> | Repair material cost multiplier |</p>
+<p>Ranges use ratios, so <code>0.25</code> means 25%.</p>
+<h2>Mechanics: Faults and Heat</h2>
+<p>| Key | Purpose |
+|---|---|
+| <code>fJamThreshold</code> | Start random jam checks below this condition ratio |
+| <code>fMaxJamChance</code> | Maximum jam chance |
+| <code>bEnableEnergyFault</code> | Energy weapon faults |
+| <code>fEnergyFaultChanceMultiplier</code> | Energy fault multiplier during firing |
+| <code>fEnergyReloadFaultChanceMultiplier</code> | Energy fault multiplier during reload |
+| <code>fEnergyFaultDuration</code> | Energy fault duration |
+| <code>bEnableWeaponOverheat</code> | Weapon overheat system |
+| <code>fOverheatHeatPerShot</code> | Base heat added per shot |
+| <code>fOverheatCooldownRate</code> | Cooling speed after firing stops |
+| <code>fOverheatRecoveryThreshold</code> | Recovery threshold for the overheated state |
+| <code>fOverheatWearMultiplier</code> | Extra weapon wear while overheated |
+| <code>iJammingPhase</code> | <code>0</code> firing jams, <code>1</code> reload jams |
+| <code>bQuickUnjam</code> | Quick fault clearing |</p>
+<p>Heat eligibility comes from the weapon Profile mechanism and the code's weapon/ammo identity checks. An ammo wear profile by itself does not turn a normal 10mm pistol into an overheating weapon.</p>
+<h2>Mechanics: Performance and Repair</h2>
+<p>| Key | Purpose |
+|---|---|
+| <code>iDegradationMode</code> | <code>0</code> NV stepped performance loss, <code>1</code> FO76 linear loss |
+| <code>fPenaltyThreshold</code> | Condition threshold where performance penalties begin |
+| <code>fPenaltyMultMid</code> | Mid-condition performance multiplier |
+| <code>fPenaltyMultLow</code> | Low-condition performance multiplier |
+| <code>fLinearMinMult</code> | Minimum multiplier in linear mode |
+| <code>bWeaponConditionAffectsDamage</code> | Weapon condition affects damage |
+| <code>bWeaponConditionAffectsValue</code> | Weapon condition affects value |
+| <code>bArmorConditionAffectsResistance</code> | Armor condition affects resistance |
+| <code>bArmorConditionAffectsValue</code> | Armor condition affects value |
+| <code>iRepairMaterialMode</code> | Repair material mode |
+| <code>bDynamicRepairMaterialCost</code> | Dynamic material cost |
+| <code>bEnablePipboyJuryRepair</code> | Pip-Boy Jury Rigging |
+| <code>bEnableWorkbenchMaterialRepair</code> | Workbench material repair |
+| <code>bEnableRepairKits</code> | Repair kits |
+| <code>bConfirmConsumeFavoriteMaterial</code> | Confirm before consuming favorite material |
+| <code>bConfirmConsumeLegendaryMaterial</code> | Confirm before consuming legendary material |
+| <code>fJuryRepairCap</code> | Pip-Boy Jury Rigging method cap |
+| <code>fWorkbenchRepairCap</code> | Workbench method cap |</p>
+<p>The final repair cap also passes through skill tiers from <code>Repair/OverRepair/</code>; the smaller of the two caps is used.</p>
+<h2>Debug</h2>
+<p>| Key | Purpose |
+|---|---|
+| <code>bEnableLogging</code> | Write detailed diagnostics to <code>ConditionSystemFramework.log</code> |</p>
+<p>When a Provider is not selected, a FormID does not resolve, a category is wrong or a skill is not recognized, enable this setting and fully restart before reproducing. The log distinguishes “configuration was not loaded” from “the rule loaded but its condition did not match.”</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

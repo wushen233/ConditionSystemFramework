@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Repair</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/04-repair.html">中文</a>
+  </header>
+  <main>
+<h1>Repair Module</h1>
+<p>Runtime directory:</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Repair/
+</code></pre>
+<p>The repair module has three independent submodules:</p>
+<pre><code class="language-text">Repair/JuryRigging/   Jury Rigging: whether a donor can repair a target
+Repair/OverRepair/    Over-Repair: the maximum allowed condition
+Repair/RepairKits/    Repair kits: what a kit can repair and how much
+</code></pre>
+<p>Repair eligibility, the repair cap and kit strength are separate concerns. Do not treat <code>DisplaySkill</code>, <code>RequiredSkill</code> and the MCM caps as one condition.</p>
+<h2>Provider Selection</h2>
+<p>Repair Providers are single-selection files. Each candidate must satisfy:</p>
+<ol>
+<li>The root object has <code>RequiredPlugin</code>.</li>
+<li>The filename is exactly <code>&lt;RequiredPlugin&gt;.json</code>, case-insensitively.</li>
+<li><code>RequiredPlugin</code> is loaded.</li>
+<li><code>Repair/ProviderSelection.json</code> selects the winning candidate.</li>
+</ol>
+<p>Current modes:</p>
+<p>| Submodule | Current mode |
+|---|---|
+| <code>JuryRigging</code> | <code>JsonPriorityFirst</code>: ProviderPriority, then plugin load order |
+| <code>OverRepair</code> | <code>PluginLoadOrderFirst</code>: plugin load order, then ProviderPriority |
+| <code>RepairKits</code> | Reads the <code>0_DefaultKits.json</code> template rather than selecting a skill Provider |</p>
+<p><code>Fallout4.esm.json</code>, <code>Classic Skill System.esp.json</code>, <code>StandaloneRepair.esp.json</code> and <code>You Are Exceptional.esp.json</code> are independent Provider candidates. They are not merged into one rule set.</p>
+<h2>RequiredSkill</h2>
+<p>Repair rules use:</p>
+<pre><code class="language-jsonc">{
+  &quot;Type&quot;: &quot;AV&quot;,
+  &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;FormID&quot;: &quot;0xFA0&quot;,
+  &quot;MinRank&quot;: 1.0,
+  &quot;ScaleFactor&quot;: 1.0
+}
+</code></pre>
+<p>Supported types:</p>
+<ul>
+<li><code>AV</code>: reads an Actor Value.</li>
+<li><code>Perk</code>: reads the player's Perk Rank.</li>
+<li><code>Global</code>: reads a Global value.</li>
+</ul>
+<p><code>EditorID</code> may be used instead. <code>MinRank</code> is used as a minimum value by rules that rely on it; <code>ScaleFactor</code> is applied before thresholds are evaluated. If the plugin or FormID cannot resolve, the rule does not grant repair permission.</p>
+<h2>Jury Rigging</h2>
+<h3>Provider Root</h3>
+<pre><code class="language-jsonc">{
+  &quot;RequiredPlugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;Repair.JuryRigging&quot;,
+  &quot;ProviderPriority&quot;: 100,
+  &quot;DisplaySkill&quot;: { &quot;Type&quot;: &quot;AV&quot;, &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;, &quot;FormID&quot;: &quot;0xFA0&quot; },
+  &quot;RepairEfficiency&quot;: { &quot;Type&quot;: &quot;FNV&quot;, &quot;Skill&quot;: { &quot;Type&quot;: &quot;AV&quot;, &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;, &quot;FormID&quot;: &quot;0xFA0&quot; } },
+  &quot;JuryRiggingRules&quot;: []
+}
+</code></pre>
+<h3>DisplaySkill</h3>
+<p><code>DisplaySkill</code> controls only the skill value shown in the top-right area of the Jury Rigging screen. It does not:</p>
+<ul>
+<li>grant cross-category repair permission;</li>
+<li>change <code>RequiredSkill</code>; or</li>
+<li>change the workbench UI.</li>
+</ul>
+<p>This allows the UI to show Repair skill while eligibility remains controlled by <code>RequiredSkill</code> or the game's own Perk conditions.</p>
+<h3>RepairEfficiency</h3>
+<p>The current loader accepts only <code>Type: &quot;FNV&quot;</code>. The mixed repair addition is calculated as:</p>
+<pre><code class="language-text">better        = max(targetCondition, materialCondition)
+lower         = min(targetCondition, materialCondition)
+combined      = better
+              + lower * LowerConditionMultiplier
+              + BaseBonus
+              + RepairSkill * SkillMultiplier
+rawAddition   = max(0, combined - targetCondition)
+finalAddition = rawAddition * JuryRuleEfficiency
+</code></pre>
+<p>The current Classic Skill System Provider uses:</p>
+<pre><code class="language-text">BaseBonus                = 0.05
+LowerConditionMultiplier = 0.05
+SkillMultiplier          = 0.0015
+</code></pre>
+<p><code>JuryRuleEfficiency</code> comes from <code>MaterialConditionMultiplier</code> and then <code>EfficiencyModifiers</code>. Repair skill therefore affects both the eligibility layer and the amount repaired, rather than only appearing in the UI.</p>
+<h3>JuryRiggingRules</h3>
+<p>Each rule needs target and donor predicates plus a compatibility condition:</p>
+<pre><code class="language-jsonc">{
+  &quot;RuleName&quot;: &quot;Same Family Repair&quot;,
+  &quot;Priority&quot;: 100,
+  &quot;MaterialConditionMultiplier&quot;: 0.8,
+  &quot;AppliesTo&quot;: {
+    &quot;target&quot;: { &quot;all&quot;: [&quot;weapon&quot;] },
+    &quot;material&quot;: { &quot;all&quot;: [&quot;weapon&quot;] }
+  },
+  &quot;Compatibility&quot;: {
+    &quot;all&quot;: [{ &quot;type&quot;: &quot;sameGroup&quot;, &quot;group&quot;: &quot;Weapon.Handling&quot; }]
+  }
+}
+</code></pre>
+<p><code>AppliesTo.target</code> and <code>AppliesTo.material</code> are evaluated independently. Predicate fields mean:</p>
+<ul>
+<li><code>all</code>: every category is required.</li>
+<li><code>any</code>: at least one category is required.</li>
+<li><code>none</code>: none of the categories may be present.</li>
+</ul>
+<p>For example:</p>
+<pre><code class="language-jsonc">&quot;none&quot;: [&quot;Weapon.Flag.Ignore&quot;]
+</code></pre>
+<h3>Compatibility Types</h3>
+<p>| Type | Condition |
+|---|---|
+| <code>always</code> | Adds no category relationship; target/donor predicates still apply |
+| <code>sameBase</code> | Both items have the same base FormID |
+| <code>sameGroup</code> | Both select the same category in the group; missing categories fail |
+| <code>sameOptionalGroup</code> | Both are missing the group, or both select the same category; one missing and one present fails |
+| <code>sharesAnyCategory</code> | Both share at least one category under the group prefix |
+| <code>groupPair</code> | Target and donor categories must be in <code>pairs</code>; <code>symmetric: true</code> also accepts the reverse |</p>
+<p>All entries in <code>Compatibility.all</code> must pass.</p>
+<h3>Rule Priority</h3>
+<p>All matching rules are evaluated. The winner is selected by:</p>
+<ol>
+<li>Higher <code>Priority</code>.</li>
+<li>Higher efficiency when Priority ties.</li>
+<li>Lexicographically earlier <code>RuleName</code> as the deterministic final tie-break.</li>
+</ol>
+<p><code>MaterialConditionMultiplier</code> below 1.0 represents an efficiency penalty. <code>SkillThresholds</code> on a Jury rule currently acts primarily as an entry threshold: when <code>RequiredSkill</code> is configured, the current value must reach the first sorted threshold. <code>maxValue</code> is not used as a Jury repair cap; OverRepair and MCM control the cap separately.</p>
+<h3>Current CSF Repair Design</h3>
+<p>The current Classic Skill System Provider is designed as follows:</p>
+<ul>
+<li>Exact same-base repairs use the normal repair rule and do not require Jury Rigging.</li>
+<li>Other cross-record repairs normally require <code>NVSS_Perk_JuryRigging</code>.</li>
+<li>Ranged weapons use Family, Handling and Configuration to calculate compatibility and efficiency.</li>
+<li>Melee weapons use Family and Handling.</li>
+<li>Pipe weapons receive an additional cross-Handling rule through <code>Weapon.Modifier.Pipe</code>; ordinary weapons are not made universally interchangeable.</li>
+<li>Armor uses Material, Region and Grade. <code>Armor.Flag.Ignore</code> and <code>Armor.Flag.NoDonor</code> are excluded.</li>
+</ul>
+<p>The old <code>TargetKeywords</code>, <code>MatchCategories</code> and <code>RankLimits</code> fields are not read by the current Jury loader. New rules should use <code>AppliesTo</code>, <code>Compatibility</code>, <code>RequiredSkill</code> and <code>SkillThresholds</code>.</p>
+<h2>OverRepair</h2>
+<p>Path: <code>Repair/OverRepair/&lt;RequiredPlugin&gt;.json</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;RequiredPlugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;Repair.OverRepair&quot;,
+  &quot;ProviderPriority&quot;: 100,
+  &quot;OverRepairRules&quot;: [
+    {
+      &quot;RuleName&quot;: &quot;Over-Repair Firearms&quot;,
+      &quot;RequiredSkill&quot;: { &quot;Type&quot;: &quot;AV&quot;, &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;, &quot;FormID&quot;: &quot;0xFA0&quot; },
+      &quot;SkillThresholds&quot;: [
+        { &quot;threshold&quot;: 0.0, &quot;maxValue&quot;: 1.0 },
+        { &quot;threshold&quot;: 50.0, &quot;maxValue&quot;: 1.5 },
+        { &quot;threshold&quot;: 100.0, &quot;maxValue&quot;: 2.0 }
+      ],
+      &quot;AppliesTo&quot;: {
+        &quot;categories&quot;: [&quot;Weapon.Handling.Pistol&quot;, &quot;Weapon.Handling.Rifle&quot;]
+      }
+    }
+  ]
+}
+</code></pre>
+<p>OverRepair selects the highest threshold that does not exceed the current skill value and returns its <code>maxValue</code>. The final cap is:</p>
+<pre><code class="language-text">Jury Rigging: min(MCM fJuryRepairCap, OverRepair skill cap)
+Workbench:     min(MCM fWorkbenchRepairCap, OverRepair skill cap)
+</code></pre>
+<p>The workbench does not display Repair skill; it only uses the resulting cap. When <code>bEnableOverCondition=0</code>, OverRepair and repair-kit caps are limited to 100%.</p>
+<h2>RepairKits</h2>
+<p>Path: <code>Repair/RepairKits/*.json</code>. The current template root key is <code>profiles</code>.</p>
+<pre><code class="language-jsonc">{
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;Expert Weapon Repair Kit&quot;,
+      &quot;formIDs&quot;: { &quot;CSF_RepairKit.esp&quot;: [&quot;F09&quot;] },
+      &quot;canRepairWeapon&quot;: true,
+      &quot;canRepairArmor&quot;: false,
+      &quot;baseRepairPoints&quot;: 1200,
+      &quot;maxConditionLimit&quot;: 1.25
+    }
+  ]
+}
+</code></pre>
+<ul>
+<li><code>baseRepairPercent</code>: repair a percentage of target maximum durability.</li>
+<li><code>baseRepairPoints</code>: repair a fixed number of durability points; its presence selects point mode.</li>
+<li><code>maxConditionLimit</code>: kit-specific maximum target condition.</li>
+<li><code>canRepairWeapon</code> / <code>canRepairArmor</code>: item-type permissions.</li>
+<li><code>formIDs</code> and <code>keywords</code>: identify the kit.</li>
+</ul>
+<p>The kit limit is still affected by MCM <code>bEnableOverCondition</code>. <code>DisplaySkill</code> does not grant additional kit permissions.</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Provider Selection</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/07-provider-selection.html">中文</a>
+  </header>
+  <main>
+<h1>Provider Selection and Loading</h1>
+<p>CSF currently uses three loading patterns: merged classification Providers, single-selection Repair/Loot Providers, and all-loaded durability profiles. This document explains selection; see each module document for fields.</p>
+<h2>Classification Providers</h2>
+<p>File:</p>
+<pre><code class="language-text">Classifications/ProviderSelection.json
+</code></pre>
+<p>Current settings:</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 1,
+  &quot;module&quot;: &quot;Classifications.ProviderSelection&quot;,
+  &quot;loading&quot;: {
+    &quot;mode&quot;: &quot;AllRequirementsSatisfied&quot;,
+    &quot;missingRequirement&quot;: &quot;SkipProvider&quot;
+  },
+  &quot;conflictResolution&quot;: {
+    &quot;mode&quot;: &quot;JsonPriorityFirst&quot;,
+    &quot;finalTieBreak&quot;: &quot;ProviderFileName&quot;
+  }
+}
+</code></pre>
+<p>Meaning:</p>
+<ul>
+<li>Every classification Provider whose <code>requires</code> dependencies are loaded is read.</li>
+<li>A missing dependency skips the whole Provider.</li>
+<li><code>JsonPriorityFirst</code> compares ProviderPriority/sourceTier first, then plugin load order. Schema 2 continues with <code>resolutionPriority</code>; Schema 3 uses context, Attach Point role and <code>listPriority</code> strength fields.</li>
+<li><code>ProviderFileName</code> is only the deterministic final tie-break; do not use filenames as user-priority settings.</li>
+</ul>
+<p>Classification groups decide whether results coexist or are exclusive. ProviderPriority is not a global “override every other file” switch.</p>
+<h2>Repair Providers</h2>
+<p>File:</p>
+<pre><code class="language-text">Repair/ProviderSelection.json
+</code></pre>
+<p>Current settings:</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 1,
+  &quot;module&quot;: &quot;Repair.ProviderSelection&quot;,
+  &quot;modules&quot;: {
+    &quot;JuryRigging&quot;: { &quot;mode&quot;: &quot;JsonPriorityFirst&quot; },
+    &quot;OverRepair&quot;: { &quot;mode&quot;: &quot;PluginLoadOrderFirst&quot; }
+  }
+}
+</code></pre>
+<p>For each candidate <code>.json</code>, the loader checks:</p>
+<ol>
+<li><code>RequiredPlugin</code> exists.</li>
+<li>The filename is <code>&lt;RequiredPlugin&gt;.json</code>.</li>
+<li><code>RequiredPlugin</code> is loaded.</li>
+<li>The module mode selects exactly one file.</li>
+</ol>
+<p>Therefore <code>Classic Skill System.esp.json</code> does not merge with <code>Fallout4.esm.json</code>; it replaces that submodule when selected.</p>
+<h2>Loot Providers</h2>
+<p>File:</p>
+<pre><code class="language-text">Loot/ProviderSelection.json
+</code></pre>
+<p>The current <code>ConditionBonus</code> module uses <code>PluginLoadOrderFirst</code>. <code>Loot/ConditionBonus/Fallout4.esm.json</code> participates only when Fallout4.esm is loaded.</p>
+<h2>Durability Profiles</h2>
+<p>Profiles under <code>Durability/Consumption/</code> are not single-selection Providers:</p>
+<ul>
+<li><code>Weapons</code>, <code>Armors</code>, <code>Ammos</code>, <code>Modifiers</code>, <code>Omods</code>, <code>CategoryModifiers</code> and <code>SkillModifiers</code> scan the <code>.json</code> files in their respective directories.</li>
+<li>Base profiles depend on match conditions; CategoryModifiers, OMOD effects and skill modifiers may accumulate.</li>
+<li><code>priority</code> provides deterministic ordering, while whether one result or all matching modifiers are used is defined by the module implementation.</li>
+</ul>
+<h2>Filename Guidance</h2>
+<ul>
+<li>Single-selection Providers should use the exact dependency filename, for example <code>Classic Skill System.esp.json</code>.</li>
+<li>Contribution-style classification files may use feature names such as <code>CSF_Pipe_Weapons.json</code>, but their <code>requires</code> list must be correct.</li>
+<li>Do not copy a ProviderSelection file into a candidate directory; files named <code>ProviderSelection.json</code> are skipped specially.</li>
+</ul>
+<h2>Log Confirmation</h2>
+<p>With logging enabled, these messages confirm selection:</p>
+<ul>
+<li><code>[ProfileManager] Selected ... provider ...</code></li>
+<li><code>[Classification] Registered ... Provider ...</code></li>
+<li><code>[ArmorConcepts] Compiled ... concepts ...</code></li>
+</ul>
+<p><code>expected canonical filename</code> means the Provider filename is invalid. <code>not loaded</code> means the dependency is not in the current MO2 load list.</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

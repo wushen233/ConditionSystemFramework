@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Provider 选择与加载</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/07-provider-selection.html">English</a>
+  </header>
+  <main>
+<h1>Provider 选择与加载</h1>
+<p>CSF 当前有三种配置加载方式：分类 Provider 合并、Repair/Loot Provider 单选，以及耐久 Profile 全部读取。本文件只解释选择规则；具体字段请看对应模块文档。</p>
+<h2>分类 Provider</h2>
+<p>文件：</p>
+<pre><code class="language-text">Classifications/ProviderSelection.json
+</code></pre>
+<p>当前设置：</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 1,
+  &quot;module&quot;: &quot;Classifications.ProviderSelection&quot;,
+  &quot;loading&quot;: {
+    &quot;mode&quot;: &quot;AllRequirementsSatisfied&quot;,
+    &quot;missingRequirement&quot;: &quot;SkipProvider&quot;
+  },
+  &quot;conflictResolution&quot;: {
+    &quot;mode&quot;: &quot;JsonPriorityFirst&quot;,
+    &quot;finalTieBreak&quot;: &quot;ProviderFileName&quot;
+  }
+}
+</code></pre>
+<p>含义：</p>
+<ul>
+<li>所有 <code>requires</code> 都满足的分类 Provider 都加载。</li>
+<li>缺少任意依赖时跳过整个 Provider。</li>
+<li><code>JsonPriorityFirst</code> 先比较 ProviderPriority/sourceTier，再比较插件加载顺序；Schema 2 继续使用 <code>resolutionPriority</code>，Schema 3 继续使用实例上下文、Attach Point 角色和 <code>listPriority</code> 等强度字段。</li>
+<li><code>ProviderFileName</code> 只负责最后确定性决胜，不应当用文件名表达用户优先级。</li>
+</ul>
+<p>分类组本身决定命中结果是共存还是互斥。ProviderPriority 不是“让整个文件覆盖所有其他分类”的全局开关。</p>
+<h2>Repair Provider</h2>
+<p>文件：</p>
+<pre><code class="language-text">Repair/ProviderSelection.json
+</code></pre>
+<p>当前设置：</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 1,
+  &quot;module&quot;: &quot;Repair.ProviderSelection&quot;,
+  &quot;modules&quot;: {
+    &quot;JuryRigging&quot;: { &quot;mode&quot;: &quot;JsonPriorityFirst&quot; },
+    &quot;OverRepair&quot;: { &quot;mode&quot;: &quot;PluginLoadOrderFirst&quot; }
+  }
+}
+</code></pre>
+<p>Repair 子模块会在候选目录中读取每个 <code>.json</code>，然后检查：</p>
+<ol>
+<li><code>RequiredPlugin</code> 是否存在。</li>
+<li>文件名是否等于 <code>&lt;RequiredPlugin&gt;.json</code>。</li>
+<li><code>RequiredPlugin</code> 是否已加载。</li>
+<li>按子模块的 mode 排序并选择一个文件。</li>
+</ol>
+<p>因此 <code>Classic Skill System.esp.json</code> 不是一个会自动和 <code>Fallout4.esm.json</code> 合并的补丁，而是当它胜出时整套替换该子模块。</p>
+<h2>Loot Provider</h2>
+<p>文件：</p>
+<pre><code class="language-text">Loot/ProviderSelection.json
+</code></pre>
+<p>当前 <code>ConditionBonus</code> 使用 <code>PluginLoadOrderFirst</code>。<code>Loot/ConditionBonus/Fallout4.esm.json</code> 只在 Fallout4.esm 已加载时参与竞争。</p>
+<h2>耐久 Profile</h2>
+<p><code>Durability/Consumption/</code> 下的 profile 文件不是 Provider 单选：</p>
+<ul>
+<li><code>Weapons</code>、<code>Armors</code>、<code>Ammos</code>、<code>Modifiers</code>、<code>Omods</code>、<code>CategoryModifiers</code> 和 <code>SkillModifiers</code> 会遍历各自目录中的 <code>.json</code>。</li>
+<li>基础 Profile 依赖匹配条件；CategoryModifiers、OMOD 和技能 modifier 可以叠加。</li>
+<li><code>priority</code> 负责确定性排序，具体是否“只取一个”或“全部叠加”由模块实现决定。</li>
+</ul>
+<h2>文件命名建议</h2>
+<ul>
+<li>单选 Provider：使用真实依赖插件的精确文件名，例如 <code>Classic Skill System.esp.json</code>。</li>
+<li>贡献式分类：文件名可以按功能命名，例如 <code>CSF_Pipe_Weapons.json</code>，但必须保证 <code>requires</code> 正确。</li>
+<li>不要把 Provider 选择文件复制到候选目录；loader 会专门跳过名为 <code>ProviderSelection.json</code> 的文件。</li>
+</ul>
+<h2>日志确认</h2>
+<p>开启日志后，以下信息可以确认选择结果：</p>
+<ul>
+<li><code>[ProfileManager] Selected ... provider ...</code></li>
+<li><code>[Classification] Registered ... Provider ...</code></li>
+<li><code>[ArmorConcepts] Compiled ... concepts ...</code></li>
+</ul>
+<p>如果看到 <code>expected canonical filename</code>，说明 Provider 文件名不符合规则；如果看到 <code>not loaded</code>，说明依赖插件没有进入当前 MO2 实例的加载列表。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

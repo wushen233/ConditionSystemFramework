@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuration Overview</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/00-overview.html">中文</a>
+  </header>
+  <main>
+<h1>CSF Configuration Overview</h1>
+<p>This document set describes the configuration that the current <code>ConditionSystemFramework</code> source actually reads. The runtime configuration root is:</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/
+</code></pre>
+<p>Configuration files are parsed as JSONC, so <code>//</code> and <code>/* ... */</code> comments are supported. After changing a configuration file, fully restart the game to avoid stale caches or previously selected Providers.</p>
+<h2>Module Documents</h2>
+<p>| Document | Runtime path | Purpose |
+|---|---|---|
+| <a href="01-classifications.html">Classifications</a> | <code>Classifications/</code> | Supplies weapon and armor classification facts |
+| <a href="02-durability-consumption.html">Durability Consumption</a> | <code>Durability/Consumption/</code> | Controls base durability, wear, ammo, OMOD and skill modifiers |
+| <a href="03-damage-formula.html">Damage Formula</a> | <code>Durability/DamageFormula/</code> | Converts incoming damage into armor durability loss |
+| <a href="04-repair.html">Repair</a> | <code>Repair/</code> | Controls Jury Rigging, Over-Repair and repair kits |
+| <a href="05-loot.html">Loot</a> | <code>Loot/</code> | Controls random initial condition and skill bonuses |
+| <a href="06-item-cards.html">Item Cards</a> | <code>ItemUICards.json</code> | Controls the CND row anchor in IIF item cards |
+| <a href="07-provider-selection.html">Provider Selection</a> | Each module's <code>ProviderSelection.json</code> | Explains merged and single-provider loading |
+| <a href="08-mcm-and-ini.html">MCM and INI</a> | <code>MCM/Config/ConditionSystemFramework/settings.ini</code> | Runtime switches, values and widgets |</p>
+<h2>Loading Model</h2>
+<p>CSF uses more than one loading model:</p>
+<ol>
+<li><code>Classifications/</code> uses contribution-style Providers. Every file whose <code>requires</code> dependencies are loaded is read and merged through classification-group rules.</li>
+<li><code>Repair/</code> and <code>Loot/</code> use single-provider selection. One Provider file is selected for each submodule.</li>
+<li>Profiles under <code>Durability/Consumption/</code> are all loaded. A profile becomes active when its match conditions apply; priority and the module's implementation determine whether one result is selected or multiple modifiers are accumulated.</li>
+<li><code>ItemUICards.json</code> and the MCM INI each have one effective configuration file.</li>
+</ol>
+<p>Runtime files belong in the project's <code>data/</code> image. Development runs through the MO2 overlay; release packages should be built from the same <code>data/</code> image.</p>
+<h2>FormID Syntax</h2>
+<p>Generic <code>formIDs</code> fields accept both forms:</p>
+<pre><code class="language-jsonc">&quot;formIDs&quot;: [
+  &quot;Fallout4.esm|0001A2B3&quot;,
+  &quot;SomeMod.esp|000123&quot;
+]
+
+&quot;formIDs&quot;: {
+  &quot;SomeMod.esp&quot;: [&quot;003&quot;, &quot;004&quot;]
+}
+</code></pre>
+<p>CSF resolves regular and ESL/ESL-flagged plugins against the current load order. ESL records may use a plugin-local record number or a full <code>FE</code> FormID. If the plugin is not loaded, the reference cannot resolve and the related profile or Provider will not behave as intended.</p>
+<p>Schema 3 classification <code>list</code> values refer to plugin FormID Lists, not directly to an item FormID:</p>
+<pre><code class="language-jsonc">&quot;list&quot;: &quot;MyClassificationPatch.esp|0x000800&quot;
+</code></pre>
+<p>The FLST members are the KYWD, OMOD, WEAP or ARMO records. To exclude one exact weapon or armor, put the WEAP/ARMO in a <code>Weapon.Flag.Ignore</code> or <code>Armor.Flag.Ignore</code> FLST; see the <a href="01-classifications.html">Classifications</a> document.</p>
+<h2>Skill and Attribute References</h2>
+<p><code>RequiredSkill</code>, <code>DisplaySkill</code> and loot skill references use this structure:</p>
+<pre><code class="language-jsonc">{
+  &quot;Type&quot;: &quot;AV&quot;,
+  &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;FormID&quot;: &quot;0xFA0&quot;,
+  &quot;MinRank&quot;: 1.0,
+  &quot;ScaleFactor&quot;: 1.0
+}
+</code></pre>
+<p><code>EditorID</code> may be used instead of <code>Plugin</code> and <code>FormID</code>. <code>AV</code> reads an Actor Value, <code>Perk</code> reads the player's current perk rank, and <code>Global</code> reads a Global value. <code>ScaleFactor</code> changes the value used by the rule; it does not change the in-game skill itself.</p>
+<h2>Troubleshooting Order</h2>
+<ol>
+<li>Confirm that the file is under the correct module directory and has the <code>.json</code> extension, rather than being placed under <code>docs/</code>.</li>
+<li>Validate JSONC syntax, especially commas, strings and comments.</li>
+<li>Confirm that every <code>requires</code> or <code>RequiredPlugin</code> name matches the actual loaded plugin name.</li>
+<li>Confirm that a single-provider filename is exactly <code>&lt;RequiredPlugin&gt;.json</code>.</li>
+<li>Enable <code>Debug/bEnableLogging</code> and inspect <code>ConditionSystemFramework.log</code> for Provider, profile and classification messages.</li>
+<li>Fully restart the game before testing; classification results, item flags and some UI state are cached.</li>
+</ol>
+<h2>Current Boundaries</h2>
+<p>The old <code>Rules/</code>, old <code>Exclusions/</code>, <code>TargetKeywords</code>, <code>MatchCategories</code> and <code>RankLimits</code> formats are not fields of the current active loaders. Migrate them into the current module schemas instead of copying the old files into the new directories.</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

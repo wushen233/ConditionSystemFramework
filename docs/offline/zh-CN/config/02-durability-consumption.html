@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>耐久消耗模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/02-durability-consumption.html">English</a>
+  </header>
+  <main>
+<h1>耐久消耗模块</h1>
+<p>基础目录：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Durability/Consumption/
+</code></pre>
+<p>该模块负责“物品如何损耗”，不负责定义物品属于哪个类别。类别由<a href="01-classifications.html">分类模块</a>提供。</p>
+<h2>Profile 的共同匹配规则</h2>
+<p><code>Weapons/*.json</code>、<code>Armors/*.json</code>、<code>Ammos/*.json</code>、<code>Modifiers/*.json</code> 和 <code>Omods/*.json</code> 使用：</p>
+<pre><code class="language-jsonc">{
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;My Profile&quot;,
+      &quot;priority&quot;: 100,
+      &quot;formIDs&quot;: [&quot;MyMod.esp|000123&quot;],
+      &quot;keywords&quot;: [
+        [&quot;Keyword_A&quot;, &quot;Keyword_B&quot;]
+      ]
+    }
+  ]
+}
+</code></pre>
+<p><code>formIDs</code> 支持数组，也支持按插件分组的对象写法。<code>keywords</code> 是“外层 OR、内层 AND”：上例表示同时拥有 <code>Keyword_A</code> 和 <code>Keyword_B</code>，或者另一组关键词匹配时命中。</p>
+<p>武器和护甲基础 Profile 的匹配顺序是：</p>
+<ol>
+<li><code>AppliesTo</code> 分类条件。</li>
+<li>精确 FormID。</li>
+<li>关键词 AND 组。</li>
+<li>默认 Profile。</li>
+</ol>
+<p>带 <code>AppliesTo</code> 的 Profile 按 priority 从高到低排序；同一类型的 FormID 和关键词 profile 也应使用明确 priority 和文件名，避免多条规则含糊匹配。</p>
+<h2>武器基础 Profile</h2>
+<p>路径：<code>Durability/Consumption/Weapons/*.json</code></p>
+<p>字段：</p>
+<p>| 字段 | 作用 |
+|---|---|
+| <code>name</code> | 日志和诊断名称 |
+| <code>priority</code> | Profile 排序优先级 |
+| <code>maxDurability</code> | 基础最大耐久点数 |
+| <code>degradeRate</code> | 每次有效开火或近战攻击的基础磨损点数 |
+| <code>canJam</code> | 是否允许自动故障机制 |
+| <code>mechanism</code> | <code>auto</code>、<code>ballistic</code>、<code>energy</code>、<code>overheat</code>、<code>none</code> |
+| <code>isExcluded</code> | 跳过该 Profile 命中物品的耐久损耗路径；不是全链路排除 |
+| <code>AppliesTo</code> | 分类匹配条件 |</p>
+<p><code>mechanism: auto</code> 会根据武器和弹药自动判断卡壳、能量故障或过热。显式 <code>none</code> 会关闭该武器的故障机制；显式 <code>overheat</code> 会把它交给过热系统。</p>
+<p>当前默认文件 <code>VanillaWeapons.json</code> 用 Handling 选择基础 Profile，再由 CategoryModifiers 对 Family 和 Configuration 做倍率调整。</p>
+<h2>护甲基础 Profile</h2>
+<p>路径：<code>Durability/Consumption/Armors/*.json</code></p>
+<p>字段：</p>
+<p>| 字段 | 作用 |
+|---|---|
+| <code>maxDurability</code> | 基础最大耐久点数 |
+| <code>useFlatDegrade</code> | 是否改用每次命中固定磨损 |
+| <code>degradeRate</code> | 固定磨损值，或特殊 Profile 的基础值 |
+| <code>isExcluded</code> | 跳过该 Profile 命中护甲的耐久损耗路径；不是全链路排除 |
+| <code>keywords</code> | 基础 ARMO Keyword AND 组 |
+| <code>AppliesTo</code> | Material、Region、Grade 等分类条件 |</p>
+<p>普通护甲通常用 Material Profile 提供最大耐久。Region 和 Grade 由 CategoryModifiers 叠加。<code>Heavy_Power_Armor_Plating</code> 只是特殊 Profile 示例；动力甲核心域仍由分类模块分流。</p>
+<h2>弹药 Profile</h2>
+<p>路径：<code>Durability/Consumption/Ammos/*.json</code></p>
+<pre><code class="language-jsonc">{
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;Armor Piercing&quot;,
+      &quot;weaponWearMult&quot;: 1.5,
+      &quot;armorDamageMult&quot;: 2.0,
+      &quot;formIDs&quot;: [&quot;MyAmmo.esp|000123&quot;]
+    }
+  ]
+}
+</code></pre>
+<ul>
+<li><code>weaponWearMult</code> 乘在武器基础磨损上。</li>
+<li><code>armorDamageMult</code> 乘在攻击对护甲耐久造成的冲击上。</li>
+<li>弹药匹配使用 FormID 或关键词，不参与武器分类，因此“弹药属于能量类”不会自动把普通手枪变成过热武器。</li>
+</ul>
+<h2>CategoryModifiers</h2>
+<p>路径：<code>Durability/Consumption/CategoryModifiers/*.json</code></p>
+<p>文件根键是 <code>modifiers</code>。所有匹配的 modifier 都会应用：</p>
+<pre><code class="language-text">maxDurability = maxDurability * maxDurabilityMult
+degradeRate   = degradeRate * degradeMult + degradeRateFlat
+</code></pre>
+<p>其中 <code>maxDurabilityMult</code> 和 <code>degradeMult</code> 累乘，<code>degradeRateFlat</code> 累加。<code>Domain</code> 可以是 <code>Weapon</code>、<code>Armor</code> 或 <code>Any</code>；<code>AppliesTo</code> 使用 <code>all</code>、<code>any</code>、<code>none</code>。</p>
+<p>当前 <code>VanillaCategoryModifiers.json</code> 通过 Weapon Family、Weapon Configuration、Armor Grade 和 Armor Region 调整规模和磨损。</p>
+<h2>OMOD 与传奇修正</h2>
+<p>路径：</p>
+<pre><code class="language-text">Durability/Consumption/Omods/*.json
+Durability/Consumption/Modifiers/*.json
+</code></pre>
+<p>OMOD profile 字段：</p>
+<ul>
+<li><code>degradeMult</code>：已安装 OMOD 的磨损倍率，所有已安装 OMOD 累乘。</li>
+<li><code>degradeRateFlat</code>：固定磨损值，所有已安装 OMOD 累加。</li>
+<li><code>maxDurabilityMult</code>：最大耐久倍率，所有已安装 OMOD 累乘。</li>
+<li><code>immuneToJam</code>：任意匹配的 OMOD 为真时，故障免疫为真。</li>
+</ul>
+<p>传奇 <code>ModifierProfile</code> 使用相同的 <code>degradeMult</code> 和 <code>immuneToJam</code>，但来自传奇修饰器而不是普通 OMOD。</p>
+<h2>SkillModifiers</h2>
+<p>路径：<code>Durability/Consumption/SkillModifiers/*.json</code></p>
+<p>技能耐久修正不会授予维修资格，只影响耐久消耗：</p>
+<pre><code class="language-jsonc">{
+  &quot;modifiers&quot;: [
+    {
+      &quot;name&quot;: &quot;BuiltToDestroy&quot;,
+      &quot;Domain&quot;: &quot;Weapon&quot;,
+      &quot;RequiredSkill&quot;: {
+        &quot;Type&quot;: &quot;Perk&quot;,
+        &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;,
+        &quot;FormID&quot;: &quot;0xD166&quot;,
+        &quot;MinRank&quot;: 1
+      },
+      &quot;SkillThresholds&quot;: [
+        {
+          &quot;threshold&quot;: 1.0,
+          &quot;wearMultiplier&quot;: 1.15,
+          &quot;wearRateFlat&quot;: 0.0
+        }
+      ],
+      &quot;AppliesTo&quot;: { &quot;all&quot;: [&quot;weapon&quot;] }
+    }
+  ]
+}
+</code></pre>
+<p>运行时会为每条匹配规则选择“不超过当前技能值的最高 threshold”，然后把所有规则的 <code>wearMultiplier</code> 累乘、<code>wearRateFlat</code> 累加。当前 Classic Skill System 配置因此可以实现 Built to Destroy 的 +15% 武器磨损，而暴击部分仍由技能系统自身处理。</p>
+<h2>武器磨损总流程</h2>
+<p>有效磨损大致按以下顺序计算：</p>
+<pre><code class="language-text">基础 degradeRate
+  * 传奇/OMOD degradeMult
+  * 弹药 weaponWearMult
+  * SkillModifiers wearMultiplier
+  + OMOD degradeRateFlat
+  + SkillModifiers wearRateFlat
+  * MCM fWeaponWearMultiplier
+  * 过热状态倍率（如果当前已过热）
+</code></pre>
+<p>护甲损耗在伤害公式得到基础耐久损耗后，再套用 OMOD、技能和 MCM 的护甲磨损倍率。</p>
+<h2>关于 isExcluded</h2>
+<p><code>WeaponProfile</code> 和 <code>ArmorProfile</code> 支持 <code>isExcluded: true</code> 以及精确 <code>formIDs</code>。当前源码会用它跳过相应的耐久消耗和部分故障/战利品处理路径；它不是分类标记，也不会替代 <code>Weapon.Flag.Ignore</code> 或 <code>Armor.Flag.Ignore</code>。</p>
+<p>如果需求是“完全离开 CSF”，包括不显示耐久 UI、不参与维修目标/供体，应使用分类模块的 Ignore FLST。若只是让某个物品不损耗，才适合用 <code>isExcluded</code> profile。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

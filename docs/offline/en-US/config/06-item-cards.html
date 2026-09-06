@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Item Cards</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/06-item-cards.html">中文</a>
+  </header>
+  <main>
+<h1>Item Cards Module</h1>
+<p>Configuration file:</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/ItemUICards.json
+</code></pre>
+<p>This file controls the CND row position inside IIF item cards. It does not control the HUD CND widget and does not decide whether an item is managed by the durability system.</p>
+<h2>Current Structure</h2>
+<pre><code class="language-jsonc">{
+  &quot;ItemUICards&quot;: {
+    &quot;CND&quot;: {
+      &quot;priority&quot;: 0,
+      &quot;anchorTarget&quot;: &quot;$ammo&quot;,
+      &quot;anchorMode&quot;: &quot;after&quot;,
+      &quot;fallbackAnchorTarget&quot;: &quot;TOP&quot;,
+      &quot;fallbackAnchorMode&quot;: &quot;after&quot;
+    }
+  }
+}
+</code></pre>
+<p>| Field | Purpose |
+|---|---|
+| <code>priority</code> | Ordering priority when multiple card rows are registered |
+| <code>anchorTarget</code> | Preferred anchor, such as <code>$ammo</code> |
+| <code>anchorMode</code> | Insertion position relative to the preferred anchor; current value is <code>after</code> |
+| <code>fallbackAnchorTarget</code> | Anchor used when the preferred target is absent |
+| <code>fallbackAnchorMode</code> | Insertion position for the fallback anchor |</p>
+<p>If an item card has no ammo row, CSF uses the fallback anchor. Adjust the anchor rather than hard-coding coordinates in the SWF.</p>
+<p>This module depends on the Item Integration Framework item-card API. If the IIF DLL is not loaded, the CND row is not registered. That is separate from the workbench repair-button path and the HUD widget backends.</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

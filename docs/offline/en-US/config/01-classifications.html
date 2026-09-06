@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classifications</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/01-classifications.html">中文</a>
+  </header>
+  <main>
+<h1>Classifications Module</h1>
+<p>Runtime directory:</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Classifications/
+</code></pre>
+<p>The classifications module answers “what facts describe this item?”. Durability, repair and fault modules consume those facts. Classification files do not edit ESP records and do not directly change durability.</p>
+<h2>Provider Types</h2>
+<p>| Schema | <code>module</code> | Purpose |
+|---|---|---|
+| 3 | <code>weaponClassifications</code> | Weapon Family, Handling, Configuration and Flag categories |
+| 3 | <code>armorClassifications</code> | Armor Material, Region, Grade, Flag and equipment domain |
+| 2 | <code>classifications</code> | General rules with direct FormID, keyword and instance matching |</p>
+<p>The main classification data comes from FLST records in plugins. <code>CSF_Weapons.json</code>, <code>CSF_Armor_Concepts.json</code> and the exclusion files reference lists stored in CSF or bridge plugins.</p>
+<h2>Weapon Groups</h2>
+<p>| Group | Resolution | Current use |
+|---|---|---|
+| <code>Weapon.Family</code> | Coexisting | Ballistic, Energy, Launcher, Melee, Unarmed, Electromagnetic, Gamma, Alien |
+| <code>Weapon.Handling</code> | Exclusive | Pistol, Rifle, Heavy, Melee1H, Melee2H, Unarmed |
+| <code>Weapon.Configuration</code> | Optional exclusive | Shotgun and Sniper; may be empty |
+| <code>Weapon.Flag</code> | Coexisting | <code>Weapon.Flag.Ignore</code> and other marker categories |</p>
+<p>A weapon may belong to several Families; for example, a radium rifle may be both Ballistic and Gamma. Handling is the main form factor and keeps one final result. Equal-strength conflicts in an exclusive group return Unknown. Configuration may have no result.</p>
+<p>Instance classification checks both the base WEAP and OMODs installed on the current item instance. Base keywords and newly effective instance keywords use different context priorities. Attach Point roles can change Family, Handling or Configuration.</p>
+<h3>Pipe Weapons</h3>
+<p><code>Integrations/CSF_Pipe_Weapons.json</code> uses a Schema 2 general rule. It checks the base WEAP and effective instance keywords for <code>dn_weap_Pipe</code>, then adds:</p>
+<pre><code class="language-text">Weapon.Modifier.Pipe
+</code></pre>
+<p>This is a repair-oriented modifier category. It does not replace <code>Weapon.Family</code> or <code>Weapon.Handling</code>. The current Jury Rigging configuration uses it to add a wider cross-Handling repair rule for Pipe pistols, rifles and shotguns without making standard weapons universally interchangeable.</p>
+<h2>Armor Groups</h2>
+<p>| Group | Resolution | Current use |
+|---|---|---|
+| <code>Equipment.Domain</code> | Exclusive | <code>Equipment.Domain.PowerArmor</code> leaves the normal armor durability path |
+| <code>Armor.Material</code> | Exclusive | Textile, Flexible, Rigid, Scrap |
+| <code>Armor.Region</code> | Exclusive | Torso, Limbs, Head, Face, Accessory |
+| <code>Armor.Grade</code> | Optional exclusive | A, B, C; mainly driven by Size roles and instance OMODs |
+| <code>Armor.Flag</code> | Coexisting | <code>Armor.Flag.Ignore</code> |</p>
+<p>Material and Region normally come from the base ARMO. If Region is not matched, C++ uses a BOD2 fallback. The Size role may change Grade through an installed instance OMOD. Tier, Lining, Weave, Paint, Legendary and Misc are recognized instance roles, but do not participate in the three core classification layers; they are available to the durability modifier system.</p>
+<p>When <code>Equipment.Domain.PowerArmor</code> is selected, CSF leaves the item out of normal armor durability handling and preserves the vanilla power armor path.</p>
+<h2>Full Exclusion</h2>
+<h3>Weapons</h3>
+<p>The <code>Weapon.Flag.Ignore</code> FLST accepts KYWD, WEAP and nested FLST members. A hit marks the weapon as outside the durability system and keeps it out of repair targets and donors.</p>
+<h3>Armor</h3>
+<p>The <code>Armor.Flag.Ignore</code> FLST accepts KYWD, ARMO and nested FLST members. It likewise removes the armor from CSF durability and repair processing.</p>
+<p>To exclude one exact FormID:</p>
+<ol>
+<li>Create an FLST in your own patch plugin.</li>
+<li>Add the target WEAP or ARMO directly to that list.</li>
+<li>Register that FLST under the matching Ignore category in a classification Provider.</li>
+<li>Add the patch plugin to <code>requires</code> so the Provider is skipped cleanly when the dependency is absent.</li>
+</ol>
+<p>Example:</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;armorClassifications&quot;,
+  &quot;domain&quot;: &quot;armor&quot;,
+  &quot;provider&quot;: &quot;My Armor Exclusions&quot;,
+  &quot;requires&quot;: [&quot;My Armor Patch.esp&quot;],
+  &quot;ProviderPriority&quot;: 100,
+  &quot;groups&quot;: { &quot;Armor.Flag&quot;: { &quot;mode&quot;: &quot;coexisting&quot; } },
+  &quot;classifications&quot;: {
+    &quot;Armor.Flag.Ignore&quot;: [
+      {
+        &quot;list&quot;: &quot;My Armor Patch.esp|0x000800&quot;,
+        &quot;contexts&quot;: [&quot;base&quot;],
+        &quot;listPriority&quot;: 100
+      }
+    ]
+  }
+}
+</code></pre>
+<p>Direct <code>formIDs</code> arrays are primarily exact selectors for durability profiles. Schema 3 classification exclusions use FLST records; the <code>list</code> field must resolve to an FLST.</p>
+<h2>Custom Classification Provider</h2>
+<p>Basic weapon Schema 3 structure:</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;weaponClassifications&quot;,
+  &quot;domain&quot;: &quot;weapon&quot;,
+  &quot;provider&quot;: &quot;My Weapon Provider&quot;,
+  &quot;requires&quot;: [&quot;My Weapon Patch.esp&quot;],
+  &quot;ProviderPriority&quot;: 100,
+  &quot;groups&quot;: {
+    &quot;Weapon.Family&quot;: { &quot;mode&quot;: &quot;coexisting&quot; }
+  },
+  &quot;classifications&quot;: {
+    &quot;Weapon.Family.Ballistic&quot;: [
+      {
+        &quot;list&quot;: &quot;My Weapon Patch.esp|0x000801&quot;,
+        &quot;contexts&quot;: [&quot;base&quot;, &quot;instance&quot;],
+        &quot;listPriority&quot;: 100
+      }
+    ]
+  }
+}
+</code></pre>
+<p>Schema 2 is useful when an extension needs direct FormID or keyword matching:</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 2,
+  &quot;module&quot;: &quot;classifications&quot;,
+  &quot;domain&quot;: &quot;weapon&quot;,
+  &quot;provider&quot;: &quot;My Exact Weapon Rules&quot;,
+  &quot;requires&quot;: [&quot;My Weapon Patch.esp&quot;],
+  &quot;sourceTier&quot;: 200,
+  &quot;categories&quot;: [
+    {
+      &quot;id&quot;: &quot;Weapon.Modifier.MyGroup&quot;,
+      &quot;domain&quot;: &quot;weapon&quot;,
+      &quot;match&quot;: {
+        &quot;combine&quot;: &quot;any&quot;,
+        &quot;base&quot;: {
+          &quot;forms&quot;: [&quot;My Weapon Patch.esp|000812&quot;],
+          &quot;keywordsAny&quot;: [&quot;My_Keyword&quot;]
+        }
+      }
+    }
+  ]
+}
+</code></pre>
+<p>Schema 2 supports <code>forms</code>, <code>formLists</code>, <code>keywordsAny</code>, <code>keywordsAll</code>, BOD2 conditions and instance OMOD/keyword conditions. It is best used for extension markers; core weapon and armor classification should use the current Schema 3 providers.</p>
+<h2>Dependencies and Diagnostics</h2>
+<ul>
+<li>If any plugin in <code>requires</code> is missing, the whole Provider is skipped.</li>
+<li><code>Classifications/ProviderSelection.json</code> only controls conflict ordering; it does not force a missing dependency to load.</li>
+<li>Do not use <code>WeaponTypeUnarmed</code> as a weapon exclusion condition; normal fist weapons may carry that keyword.</li>
+<li>After creating a classification FLST, confirm that the referenced record is an FLST, not a KYWD, WEAP or ARMO.</li>
+<li>Useful log prefixes: <code>[Classification]</code> and <code>[ArmorConcepts]</code>.</li>
+</ul>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

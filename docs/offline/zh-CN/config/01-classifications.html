@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分类模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/01-classifications.html">English</a>
+  </header>
+  <main>
+<h1>分类模块</h1>
+<p>运行时目录：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Classifications/
+</code></pre>
+<p>分类模块只回答“这个物品具有什么分类事实”。耐久、维修和故障模块通过这些分类决定自己的规则。分类文件不会直接修改 ESP，也不会直接改变物品耐久。</p>
+<h2>Provider 类型</h2>
+<p>当前使用三类分类 Provider：</p>
+<p>| Schema | <code>module</code> | 用途 |
+|---|---|---|
+| 3 | <code>weaponClassifications</code> | 武器 Family、Handling、Configuration、Flag |
+| 3 | <code>armorClassifications</code> | 普通护甲 Material、Region、Grade、Flag，以及动力甲域 |
+| 2 | <code>classifications</code> | 兼容精确 FormID、关键词和实例条件的通用分类规则 |</p>
+<p>普通分类的核心数据来自插件中的 FLST。<code>CSF_Weapons.json</code>、<code>CSF_Armor_Concepts.json</code> 和排除文件使用的 FLST 都位于 CSF 或桥接插件中。</p>
+<h2>武器分类组</h2>
+<p>| 分类组 | 解析方式 | 当前用途 |
+|---|---|---|
+| <code>Weapon.Family</code> | 可共存 | Ballistic、Energy、Launcher、Melee、Unarmed、Electromagnetic、Gamma、Alien |
+| <code>Weapon.Handling</code> | 互斥 | Pistol、Rifle、Heavy、Melee1H、Melee2H、Unarmed |
+| <code>Weapon.Configuration</code> | 可选互斥 | Shotgun、Sniper；也可以为空 |
+| <code>Weapon.Flag</code> | 可共存 | <code>Weapon.Flag.Ignore</code> 等排除/标记 |</p>
+<p>一个武器可以同时属于多个 Family，例如镭步枪可能同时命中 Ballistic 和 Gamma。Handling 是主体形态，只保留一个最终结果；相同强度的互斥冲突会返回 Unknown。Configuration 可以没有结果。</p>
+<p>当前实例分类不仅检查基础 WEAP，也检查当前物品已经安装的 OMOD。基础 WEAP 的 Keyword 和当前实例新增的有效 Keyword 使用不同上下文优先级，已安装 OMOD 的 Attach Point 角色可以改变 Handling、Family 或 Configuration。</p>
+<h3>Pipe 武器</h3>
+<p><code>Integrations/CSF_Pipe_Weapons.json</code> 使用 Schema 2 的通用分类规则，检查基础 WEAP 或实例最终有效 Keyword 中的 <code>dn_weap_Pipe</code>，命中后追加：</p>
+<pre><code class="language-text">Weapon.Modifier.Pipe
+</code></pre>
+<p>这是修理用的附加标记，不会覆盖 <code>Weapon.Family</code> 或 <code>Weapon.Handling</code>。当前 Jury Rigging 用它把 Pipe 手枪、Pipe 步枪和 Pipe 霰弹枪放入额外的宽松跨 Handling 修理规则。</p>
+<h2>护甲分类组</h2>
+<p>| 分类组 | 解析方式 | 当前用途 |
+|---|---|---|
+| <code>Equipment.Domain</code> | 互斥 | <code>Equipment.Domain.PowerArmor</code> 命中后退出普通护甲耐久流程 |
+| <code>Armor.Material</code> | 互斥 | Textile、Flexible、Rigid、Scrap |
+| <code>Armor.Region</code> | 互斥 | Torso、Limbs、Head、Face、Accessory |
+| <code>Armor.Grade</code> | 可选互斥 | A、B、C；主要由 Size 角色和实例 OMOD决定 |
+| <code>Armor.Flag</code> | 可共存 | <code>Armor.Flag.Ignore</code> |</p>
+<p>Material 和 Region 默认从基础 ARMO 判断。Region 没有命中时，C++ 会使用 BOD2 兜底。Size 角色可以通过当前实例 OMOD 改变 Grade；Tier、Lining、Weave、Paint、Legendary 和 Misc 属于已识别的实例角色，但不参与三层核心分类，它们留给独立耐久 modifier 使用。</p>
+<p>命中 <code>Equipment.Domain.PowerArmor</code> 后，CSF 不把该物品当作普通护甲处理，保留原版动力甲耐久路径。</p>
+<h2>完整排除</h2>
+<h3>武器</h3>
+<p><code>Weapon.Flag.Ignore</code> 的 FLST 支持 KYWD、WEAP 和嵌套 FLST。命中后，CSF 将该武器标记为不进入耐久系统，也不会作为维修目标或维修供体。</p>
+<h3>普通护甲</h3>
+<p><code>Armor.Flag.Ignore</code> 的 FLST 支持 KYWD、ARMO 和嵌套 FLST。它同样会让护甲离开 CSF 耐久和维修流程。</p>
+<p>精确排除单个 FormID 的推荐步骤是：</p>
+<ol>
+<li>在自己的补丁插件中建立一个 FLST。</li>
+<li>把目标 WEAP 或 ARMO 直接加入该 FLST。</li>
+<li>在分类 Provider 中把该 FLST 注册到相应的 Ignore 分类。</li>
+<li>在 <code>requires</code> 中声明自己的补丁插件，确保它未加载时不会产生错误分类。</li>
+</ol>
+<p>示例：</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;armorClassifications&quot;,
+  &quot;domain&quot;: &quot;armor&quot;,
+  &quot;provider&quot;: &quot;My Armor Exclusions&quot;,
+  &quot;requires&quot;: [&quot;My Armor Patch.esp&quot;],
+  &quot;ProviderPriority&quot;: 100,
+  &quot;groups&quot;: { &quot;Armor.Flag&quot;: { &quot;mode&quot;: &quot;coexisting&quot; } },
+  &quot;classifications&quot;: {
+    &quot;Armor.Flag.Ignore&quot;: [
+      {
+        &quot;list&quot;: &quot;My Armor Patch.esp|0x000800&quot;,
+        &quot;contexts&quot;: [&quot;base&quot;],
+        &quot;listPriority&quot;: 100
+      }
+    ]
+  }
+}
+</code></pre>
+<p><code>formIDs</code> 直接数组主要属于耐久 profile 的精确匹配字段；分类 Schema 3 的精确物品排除通过 FLST 完成。不要把普通护甲的直接 JSON FormID 写进 Schema 3 的 <code>classifications</code>，因为该 Schema 的 <code>list</code> 必须解析为 FLST。</p>
+<h2>自定义分类 Provider</h2>
+<p>武器 Schema 3 的基本结构如下：</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;weaponClassifications&quot;,
+  &quot;domain&quot;: &quot;weapon&quot;,
+  &quot;provider&quot;: &quot;My Weapon Provider&quot;,
+  &quot;requires&quot;: [&quot;My Weapon Patch.esp&quot;],
+  &quot;ProviderPriority&quot;: 100,
+  &quot;groups&quot;: {
+    &quot;Weapon.Family&quot;: { &quot;mode&quot;: &quot;coexisting&quot; }
+  },
+  &quot;classifications&quot;: {
+    &quot;Weapon.Family.Ballistic&quot;: [
+      {
+        &quot;list&quot;: &quot;My Weapon Patch.esp|0x000801&quot;,
+        &quot;contexts&quot;: [&quot;base&quot;, &quot;instance&quot;],
+        &quot;listPriority&quot;: 100
+      }
+    ]
+  }
+}
+</code></pre>
+<p>Schema 2 的通用规则适合需要直接匹配 FormID 或 Keyword 的扩展：</p>
+<pre><code class="language-jsonc">{
+  &quot;schemaVersion&quot;: 2,
+  &quot;module&quot;: &quot;classifications&quot;,
+  &quot;domain&quot;: &quot;weapon&quot;,
+  &quot;provider&quot;: &quot;My Exact Weapon Rules&quot;,
+  &quot;requires&quot;: [&quot;My Weapon Patch.esp&quot;],
+  &quot;sourceTier&quot;: 200,
+  &quot;categories&quot;: [
+    {
+      &quot;id&quot;: &quot;Weapon.Modifier.MyGroup&quot;,
+      &quot;domain&quot;: &quot;weapon&quot;,
+      &quot;match&quot;: {
+        &quot;combine&quot;: &quot;any&quot;,
+        &quot;base&quot;: {
+          &quot;forms&quot;: [&quot;My Weapon Patch.esp|000812&quot;],
+          &quot;keywordsAny&quot;: [&quot;My_Keyword&quot;]
+        }
+      }
+    }
+  ]
+}
+</code></pre>
+<p>Schema 2 支持 <code>forms</code>、<code>formLists</code>、<code>keywordsAny</code>、<code>keywordsAll</code>、BOD2 条件和实例 OMOD/Keyword 条件。它更适合扩展标记；核心武器分类和护甲分类应优先使用当前 Schema 3。</p>
+<h2>依赖与排错</h2>
+<ul>
+<li><code>requires</code> 中任何插件未加载，整个 Provider 会跳过。</li>
+<li><code>Classifications/ProviderSelection.json</code> 只控制冲突排序，不会把缺依赖的 Provider 强行加载。</li>
+<li>不要直接使用 <code>WeaponTypeUnarmed</code> 作为武器排除条件；正常拳套类武器也可能携带该 Keyword。</li>
+<li>创建分类 FLST 后，必须确认其 FormID 是 FLST，而不是 KYWD、WEAP 或 ARMO 本身。</li>
+<li>日志关键字：<code>[Classification]</code>、<code>[ArmorConcepts]</code>。</li>
+</ul>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

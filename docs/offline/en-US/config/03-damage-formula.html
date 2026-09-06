@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Damage Formula</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_EN.html">Documentation Home</a>
+    <a href="../config-guide.html">Configuration Guide</a>
+    <a href="../../zh-CN/config/03-damage-formula.html">中文</a>
+  </header>
+  <main>
+<h1>Damage Formula Module</h1>
+<p>Runtime directory:</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Durability/DamageFormula/
+</code></pre>
+<p>The current loader reads a <code>DamageFormula</code> object. These are the fields present in the active runtime structure:</p>
+<pre><code class="language-jsonc">{
+  &quot;DamageFormula&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;baseHardness&quot;: 1.0,
+    &quot;glanceThreshold&quot;: 0.3,
+    &quot;glanceMultiplier&quot;: 0.1,
+    &quot;scratchThreshold&quot;: 0.7,
+    &quot;scratchMultiplier&quot;: 0.4,
+    &quot;durabilityDamageConstant&quot;: 0.15
+  }
+}
+</code></pre>
+<h2>Calculation Path</h2>
+<p>When hit data is available, CSF calculates:</p>
+<pre><code class="language-text">blockPercentage = totalResisted / totalRawDamage
+</code></pre>
+<p>It then selects a wear phase:</p>
+<p>| Condition | Phase | Multiplier |
+|---|---|---|
+| <code>blockPercentage &gt;= glanceThreshold</code>, or &gt;= 0.90 | Perfect defense / armor absorbs the impact | <code>glanceMultiplier</code> |
+| <code>blockPercentage &lt;= scratchThreshold</code>, or &lt;= 0.20 | Armor is penetrated / provides little interception | <code>scratchMultiplier</code> |
+| Otherwise | Normal interception | <code>1.0</code> |</p>
+<p>With hit data, the base durability loss is:</p>
+<pre><code class="language-text">totalResisted
+  * durabilityDamageConstant
+  * phase multiplier
+  * inner/outer layer multiplier
+  * power armor frame multiplier
+  * ammo armorDamageMult
+</code></pre>
+<p>Without usable hit data, CSF derives hardness from effective resistance:</p>
+<pre><code class="language-text">hardness = max(1.0, baseHardness + effectiveResist)
+durabilityCost = (totalImpact / hardness)
+                 * durabilityDamageConstant
+                 * inner/outer layer multiplier
+                 * power armor frame multiplier
+                 * ammo armorDamageMult
+</code></pre>
+<p>Armor OMODs, skill adjustments and <code>fArmorWearMultiplier</code> are applied afterwards. The final armor loss is clamped to a minimum of 0.01.</p>
+<h2>Fields</h2>
+<p>| Field | Purpose |
+|---|---|
+| <code>enabled</code> | Parsed by the loader, but not currently used as a bypass switch |
+| <code>baseHardness</code> | Base hardness in the no-hit-data path |
+| <code>glanceThreshold</code> | Threshold for the low-loss interception phase |
+| <code>glanceMultiplier</code> | Multiplier for the low-loss phase |
+| <code>scratchThreshold</code> | Threshold for the penetration/low-interception phase |
+| <code>scratchMultiplier</code> | Multiplier for the penetration phase |
+| <code>durabilityDamageConstant</code> | Global damage-to-durability constant |</p>
+<p>Thresholds are ratios, normally between <code>0.0</code> and <code>1.0</code>; do not write them as percentages such as <code>30</code> or <code>70</code>.</p>
+<h2><code>ratingMultipliers</code> Status</h2>
+<p>The current <code>01_DamageFormula.json</code> also contains <code>ratingMultipliers</code> and damage-type notes. The current <code>ProfileManager.cpp</code> loader does not read that object, and <code>DamageFormulaConfig</code> has no corresponding field. Editing <code>ratingMultipliers</code> therefore has no runtime effect at present.</p>
+<p>It remains in the example as a historical design trace, not as an active configuration feature. Enabling damage-type-specific hardness multipliers would require changes to the C++ structure, loader, calculation path and documentation.</p>
+<h2>Relationship to MCM</h2>
+<ul>
+<li><code>enabled</code> is parsed, but the current calculation path does not use it to skip the formula.</li>
+<li><code>bEnableArmorCondition</code> is the MCM master switch for armor durability.</li>
+<li><code>bArmorConditionAffectsResistance</code> controls whether current armor condition affects game resistance.</li>
+<li><code>fArmorWearMultiplier</code> is the final total armor-wear multiplier.</li>
+</ul>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

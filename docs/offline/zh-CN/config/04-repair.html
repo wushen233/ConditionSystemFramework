@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>维修模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/04-repair.html">English</a>
+  </header>
+  <main>
+<h1>维修模块</h1>
+<p>运行时目录：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Repair/
+</code></pre>
+<p>维修模块分为三个子模块：</p>
+<pre><code class="language-text">Repair/JuryRigging/   混修：决定供体能否修理目标
+Repair/OverRepair/    过量维修：决定修理上限
+Repair/RepairKits/    修理包：决定修理包能修什么以及修多少
+</code></pre>
+<p>维修资格、维修上限和修理包强度是三个独立问题，不要把 <code>DisplaySkill</code>、<code>RequiredSkill</code> 和 MCM 上限混为一个条件。</p>
+<h2>Provider 选择</h2>
+<p>Repair 的 Provider 是单选式。文件必须满足：</p>
+<ol>
+<li>根对象有 <code>RequiredPlugin</code>。</li>
+<li>文件名必须严格等于 <code>&lt;RequiredPlugin&gt;.json</code>，不区分大小写。</li>
+<li><code>RequiredPlugin</code> 必须已加载。</li>
+<li>同一目录中多个候选文件按 <code>Repair/ProviderSelection.json</code> 选择。</li>
+</ol>
+<p>当前选择策略：</p>
+<p>| 子模块 | 当前模式 |
+|---|---|
+| <code>JuryRigging</code> | <code>JsonPriorityFirst</code>：先比较 ProviderPriority，再比较插件加载顺序 |
+| <code>OverRepair</code> | <code>PluginLoadOrderFirst</code>：先比较插件加载顺序，再比较 ProviderPriority |
+| <code>RepairKits</code> | 读取 <code>0_DefaultKits.json</code> 模板，不使用技能 Provider 选择 |</p>
+<p><code>Fallout4.esm.json</code>、<code>Classic Skill System.esp.json</code>、<code>StandaloneRepair.esp.json</code> 和 <code>You Are Exceptional.esp.json</code> 是互相独立的 Provider 候选，不会合并成一套规则。</p>
+<h2>RequiredSkill</h2>
+<p>维修规则使用以下结构：</p>
+<pre><code class="language-jsonc">{
+  &quot;Type&quot;: &quot;AV&quot;,
+  &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;FormID&quot;: &quot;0xFA0&quot;,
+  &quot;MinRank&quot;: 1.0,
+  &quot;ScaleFactor&quot;: 1.0
+}
+</code></pre>
+<p><code>Type</code> 支持：</p>
+<ul>
+<li><code>AV</code>：读取 Actor Value。</li>
+<li><code>Perk</code>：读取玩家 Perk Rank。</li>
+<li><code>Global</code>：读取 Global 数值。</li>
+</ul>
+<p>也可以使用 <code>EditorID</code>。<code>MinRank</code> 对有些规则表示最低技能/等级门槛；<code>ScaleFactor</code> 先乘在读取值上，再参与阈值比较。插件或 FormID 解析失败时，规则不会授予维修权限。</p>
+<h2>Jury Rigging</h2>
+<h3>Provider 外层</h3>
+<pre><code class="language-jsonc">{
+  &quot;RequiredPlugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;Repair.JuryRigging&quot;,
+  &quot;ProviderPriority&quot;: 100,
+  &quot;DisplaySkill&quot;: { &quot;Type&quot;: &quot;AV&quot;, &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;, &quot;FormID&quot;: &quot;0xFA0&quot; },
+  &quot;RepairEfficiency&quot;: { &quot;Type&quot;: &quot;FNV&quot;, &quot;Skill&quot;: { &quot;Type&quot;: &quot;AV&quot;, &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;, &quot;FormID&quot;: &quot;0xFA0&quot; } },
+  &quot;JuryRiggingRules&quot;: []
+}
+</code></pre>
+<h3>DisplaySkill</h3>
+<p><code>DisplaySkill</code> 只控制混修界面右上角显示的技能值。它不会：</p>
+<ul>
+<li>授予跨类别维修资格。</li>
+<li>改变 <code>RequiredSkill</code>。</li>
+<li>改变工作台界面。</li>
+</ul>
+<p>因此可以让页面显示 Repair 技能，同时把真正的跨类别权限交给 <code>RequiredSkill</code> 或游戏 Perk 条件。</p>
+<h3>RepairEfficiency</h3>
+<p>当前只接受 <code>Type: &quot;FNV&quot;</code>。启用后，CSF 按以下逻辑计算混修增加量：</p>
+<pre><code class="language-text">better       = max(targetCondition, materialCondition)
+lower        = min(targetCondition, materialCondition)
+combined     = better
+             + lower * LowerConditionMultiplier
+             + BaseBonus
+             + RepairSkill * SkillMultiplier
+rawAddition  = max(0, combined - targetCondition)
+finalAddition = rawAddition * JuryRuleEfficiency
+</code></pre>
+<p>当前 Classic Skill System Provider 的默认值是：</p>
+<pre><code class="language-text">BaseBonus                 = 0.05
+LowerConditionMultiplier  = 0.05
+SkillMultiplier            = 0.0015
+</code></pre>
+<p>最后的 <code>JuryRuleEfficiency</code> 来自规则自身的 <code>MaterialConditionMultiplier</code>，再乘 <code>EfficiencyModifiers</code>。这让 Repair 技能同时影响“能否混修”和“混修能修多少”，而不是只显示在 UI 上。</p>
+<h3>JuryRiggingRules</h3>
+<p>每条规则至少需要：</p>
+<pre><code class="language-jsonc">{
+  &quot;RuleName&quot;: &quot;Same Family Repair&quot;,
+  &quot;Priority&quot;: 100,
+  &quot;MaterialConditionMultiplier&quot;: 0.8,
+  &quot;AppliesTo&quot;: {
+    &quot;target&quot;: { &quot;all&quot;: [&quot;weapon&quot;] },
+    &quot;material&quot;: { &quot;all&quot;: [&quot;weapon&quot;] }
+  },
+  &quot;Compatibility&quot;: {
+    &quot;all&quot;: [{ &quot;type&quot;: &quot;sameGroup&quot;, &quot;group&quot;: &quot;Weapon.Handling&quot; }]
+  }
+}
+</code></pre>
+<p><code>AppliesTo.target</code> 和 <code>AppliesTo.material</code> 分别检查目标物品和供体物品。谓词字段含义：</p>
+<ul>
+<li><code>all</code>：必须全部拥有。</li>
+<li><code>any</code>：至少拥有一个。</li>
+<li><code>none</code>：不能拥有任何一个。</li>
+</ul>
+<p>常用排除写法：</p>
+<pre><code class="language-jsonc">&quot;none&quot;: [&quot;Weapon.Flag.Ignore&quot;]
+</code></pre>
+<h3>Compatibility 类型</h3>
+<p>| 类型 | 条件 |
+|---|---|
+| <code>always</code> | 不追加类别关系条件；仍需通过 target/material 谓词 |
+| <code>sameBase</code> | 两件物品的基础 FormID 相同 |
+| <code>sameGroup</code> | 两件物品在指定互斥分类组中选择了相同类别；缺少类别时失败 |
+| <code>sameOptionalGroup</code> | 两件物品都缺少该组，或都命中且类别相同；一件有、一件没有时失败 |
+| <code>sharesAnyCategory</code> | 两件物品在指定组前缀下至少共享一个类别 |
+| <code>groupPair</code> | 目标类别和供体类别必须落在 <code>pairs</code> 中；<code>symmetric: true</code> 时也接受反向 |</p>
+<p><code>Compatibility.all</code> 中的多个条件必须同时满足。</p>
+<h3>规则优先级</h3>
+<p>所有匹配规则都会被评估，最终优先选择：</p>
+<ol>
+<li><code>Priority</code> 更高的规则。</li>
+<li>Priority 相同时，效率更高的规则。</li>
+<li>仍相同时，<code>RuleName</code> 字典序更靠前的规则。</li>
+</ol>
+<p><code>MaterialConditionMultiplier</code> 小于 1 表示跨类别或低质量供体的效率惩罚。<code>SkillThresholds</code> 对 Jury 规则当前主要作为最低门槛：配置了 <code>RequiredSkill</code> 时，当前技能必须达到排序后第一档 threshold。<code>maxValue</code> 不用于 Jury 混修上限；混修上限由 OverRepair 和 MCM 另行决定。</p>
+<h3>当前 CSF 的维修逻辑</h3>
+<p>当前 Classic Skill System Provider 的设计是：</p>
+<ul>
+<li>相同基础物品的正常维修规则不要求 Jury Rigging Perk。</li>
+<li>其它跨记录混修通常要求 <code>NVSS_Perk_JuryRigging</code>。</li>
+<li>标准远程武器按 Family、Handling 和 Configuration 计算效率。</li>
+<li>近战按 Family 和 Handling 计算。</li>
+<li>Pipe 武器通过 <code>Weapon.Modifier.Pipe</code> 增加跨 Handling 的专门规则，不开放普通武器的全局互修。</li>
+<li>护甲按 Material、Region、Grade 计算，<code>Armor.Flag.Ignore</code> 和 <code>Armor.Flag.NoDonor</code> 会被排除。</li>
+</ul>
+<p>旧版 <code>TargetKeywords</code>、<code>MatchCategories</code> 和 <code>RankLimits</code> 不是当前 Jury loader 的字段。新规则请使用 <code>AppliesTo</code>、<code>Compatibility</code>、<code>RequiredSkill</code> 和 <code>SkillThresholds</code>。</p>
+<h2>OverRepair</h2>
+<p>路径：<code>Repair/OverRepair/&lt;RequiredPlugin&gt;.json</code></p>
+<pre><code class="language-jsonc">{
+  &quot;RequiredPlugin&quot;: &quot;Classic Skill System.esp&quot;,
+  &quot;schemaVersion&quot;: 3,
+  &quot;module&quot;: &quot;Repair.OverRepair&quot;,
+  &quot;ProviderPriority&quot;: 100,
+  &quot;OverRepairRules&quot;: [
+    {
+      &quot;RuleName&quot;: &quot;Over-Repair Firearms&quot;,
+      &quot;RequiredSkill&quot;: { &quot;Type&quot;: &quot;AV&quot;, &quot;Plugin&quot;: &quot;Classic Skill System.esp&quot;, &quot;FormID&quot;: &quot;0xFA0&quot; },
+      &quot;SkillThresholds&quot;: [
+        { &quot;threshold&quot;: 0.0, &quot;maxValue&quot;: 1.0 },
+        { &quot;threshold&quot;: 50.0, &quot;maxValue&quot;: 1.5 },
+        { &quot;threshold&quot;: 100.0, &quot;maxValue&quot;: 2.0 }
+      ],
+      &quot;AppliesTo&quot;: {
+        &quot;categories&quot;: [&quot;Weapon.Handling.Pistol&quot;, &quot;Weapon.Handling.Rifle&quot;]
+      }
+    }
+  ]
+}
+</code></pre>
+<p>OverRepair 的阈值会选择“不超过当前技能值的最高 threshold”，并返回对应 <code>maxValue</code>。最终维修上限是：</p>
+<pre><code class="language-text">Jury Rigging:  min(MCM fJuryRepairCap, OverRepair 技能上限)
+工作台:        min(MCM fWorkbenchRepairCap, OverRepair 技能上限)
+</code></pre>
+<p>当前工作台不显示维修技能；它只使用这个上限计算。<code>bEnableOverCondition=0</code> 时，OverRepair 和修理包的超额上限会被限制到 100%。</p>
+<h2>RepairKits</h2>
+<p>路径：<code>Repair/RepairKits/*.json</code>。当前模板根键是 <code>profiles</code>。</p>
+<pre><code class="language-jsonc">{
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;Expert Weapon Repair Kit&quot;,
+      &quot;formIDs&quot;: { &quot;CSF_RepairKit.esp&quot;: [&quot;F09&quot;] },
+      &quot;canRepairWeapon&quot;: true,
+      &quot;canRepairArmor&quot;: false,
+      &quot;baseRepairPoints&quot;: 1200,
+      &quot;maxConditionLimit&quot;: 1.25
+    }
+  ]
+}
+</code></pre>
+<ul>
+<li><code>baseRepairPercent</code>：按目标最大耐久百分比修复。</li>
+<li><code>baseRepairPoints</code>：按固定耐久点数修复；出现该字段时使用点数模式。</li>
+<li><code>maxConditionLimit</code>：修理包自身的最高目标状况。</li>
+<li><code>canRepairWeapon</code> / <code>canRepairArmor</code>：类型限制。</li>
+<li><code>formIDs</code> 和 <code>keywords</code>：确定玩家使用的是哪个修理包。</li>
+</ul>
+<p>修理包的 <code>maxConditionLimit</code> 仍受 MCM <code>bEnableOverCondition</code> 影响。修理包不能通过 <code>DisplaySkill</code> 获得额外技能资格。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCM 与 INI 模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/08-mcm-and-ini.html">English</a>
+  </header>
+  <main>
+<h1>MCM 与 INI 模块</h1>
+<p>运行时用户配置：</p>
+<pre><code class="language-text">Data/MCM/Config/ConditionSystemFramework/settings.ini
+</code></pre>
+<p>项目默认模板位于：</p>
+<pre><code class="language-text">projects/ConditionSystemFramework/data/MCM/Config/ConditionSystemFramework/settings.ini
+</code></pre>
+<p>MO2 的 <code>overwrite</code> 或用户专用配置优先于项目默认模板。MCM 保存设置时会把值写回用户配置；手动编辑后需要重新打开 MCM 或重启游戏触发重新读取。</p>
+<h2>General</h2>
+<p>| 键 | 作用 |
+|---|---|
+| <code>bEnable</code> | CSF 总开关 |
+| <code>fWidgetX</code> / <code>fWidgetY</code> | SWF CND 小部件位置 |
+| <code>fWidgetScale</code> | SWF CND 小部件缩放 |
+| <code>iWidgetType</code> | 主 CND 小部件后端：<code>0</code> PrismaUI，<code>1</code> SWF |
+| <code>iSwfCndStyle</code> | SWF CND 样式选择 |</p>
+<p>各故障小部件还可以单独通过 UI 段的 <code>iUnjamWidgetType</code> 和 <code>iHeatWidgetType</code> 选择后端；任意一个小部件使用 PrismaUI 时，CSF 会加载 PrismaUI 后端。</p>
+<h2>UI</h2>
+<p>| 键 | 作用 |
+|---|---|
+| <code>bShowWidgetText</code> | 显示小部件文字 |
+| <code>iUnjamWidgetType</code> | 卡壳/故障小部件后端 |
+| <code>iHeatWidgetType</code> | 过热小部件后端 |
+| <code>bShowItemCardCND</code> | 物品卡片显示 CND |
+| <code>iItemCardCNDPosition</code> | 物品卡片 CND 位置 |
+| <code>fUnjamX/Y/Scale</code> | 卡壳小部件位置和缩放 |
+| <code>fHeatWidgetX/Y/Scale</code> | 过热小部件位置和缩放 |
+| <code>fJuryStatsOffsetX/Y</code> | Jury Rigging 右侧统计偏移 |
+| <code>fJuryStatsRowSpacing</code> | Jury Rigging 统计行距 |
+| <code>iJuryStatsColorMode</code> | Jury 统计颜色模式 |
+| <code>iCndColorMode</code> | CND 小部件颜色模式 |
+| <code>iUnjamColorMode</code> | 卡壳小部件颜色模式 |
+| <code>iHeatColorMode</code> | 过热小部件颜色模式 |
+| <code>bUseCustomColor</code> | 启用自定义颜色值 |
+| <code>sCustomColor</code> | 六位十六进制 RGB 颜色，例如 <code>FFFFFF</code> |</p>
+<p>颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色；过热条的阶段色以及过热状态覆盖色属于特殊状态，不会被普通颜色模式完全替换。</p>
+<h2>Mechanics：总开关与随机初始耐久</h2>
+<p>| 键 | 作用 |
+|---|---|
+| <code>bRandomLootDurability</code> | 新获得武器/护甲是否随机初始状况 |
+| <code>bEnableWeaponCondition</code> | 武器耐久系统 |
+| <code>bEnableArmorCondition</code> | 普通护甲耐久系统 |
+| <code>bEnableOverCondition</code> | 是否允许超过 100% |
+| <code>bDialogueFullDurability</code> | 对话相关新物品是否保持满耐久 |
+| <code>fWeaponLootDurabilityMin/Max</code> | 武器初始状况范围 |
+| <code>fArmorLootDurabilityMin/Max</code> | 护甲初始状况范围 |
+| <code>fWeaponWearMultiplier</code> | 武器总磨损倍率；缺失时默认为 1.0 |
+| <code>fArmorWearMultiplier</code> | 护甲总磨损倍率；缺失时默认为 1.0 |
+| <code>fRepairMaterialCostMultiplier</code> | 修理材料消耗倍率 |</p>
+<p>范围使用比例值，例如 <code>0.25</code> 表示 25%。</p>
+<h2>Mechanics：故障与过热</h2>
+<p>| 键 | 作用 |
+|---|---|
+| <code>fJamThreshold</code> | 低于该耐久比例后开始计算随机卡壳 |
+| <code>fMaxJamChance</code> | 最大卡壳概率 |
+| <code>bEnableEnergyFault</code> | 能量武器故障 |
+| <code>fEnergyFaultChanceMultiplier</code> | 射击阶段能量故障倍率 |
+| <code>fEnergyReloadFaultChanceMultiplier</code> | 换弹阶段能量故障倍率 |
+| <code>fEnergyFaultDuration</code> | 能量故障持续时间 |
+| <code>bEnableWeaponOverheat</code> | 过热系统 |
+| <code>fOverheatHeatPerShot</code> | 每次开火增加的基础热量 |
+| <code>fOverheatCooldownRate</code> | 停止射击后的冷却速度 |
+| <code>fOverheatRecoveryThreshold</code> | 过热状态恢复阈值 |
+| <code>fOverheatWearMultiplier</code> | 过热状态下的额外武器磨损倍率 |
+| <code>iJammingPhase</code> | <code>0</code> 射击卡壳，<code>1</code> 换弹卡壳 |
+| <code>bQuickUnjam</code> | 快速解除故障 |</p>
+<p>过热资格由武器 Profile 的 <code>mechanism</code> 和代码中的武器/弹药识别共同决定。单独修改弹药磨损 profile 不会把 10mm 手枪变成过热武器。</p>
+<h2>Mechanics：性能、修理和维修</h2>
+<p>| 键 | 作用 |
+|---|---|
+| <code>iDegradationMode</code> | <code>0</code> NV 阶梯性能衰减，<code>1</code> FO76 线性衰减 |
+| <code>fPenaltyThreshold</code> | 性能惩罚开始阈值 |
+| <code>fPenaltyMultMid</code> | 中段耐久性能倍率 |
+| <code>fPenaltyMultLow</code> | 低段耐久性能倍率 |
+| <code>fLinearMinMult</code> | 线性模式最低倍率 |
+| <code>bWeaponConditionAffectsDamage</code> | 武器耐久影响伤害 |
+| <code>bWeaponConditionAffectsValue</code> | 武器耐久影响价格 |
+| <code>bArmorConditionAffectsResistance</code> | 护甲耐久影响抗性 |
+| <code>bArmorConditionAffectsValue</code> | 护甲耐久影响价格 |
+| <code>iRepairMaterialMode</code> | 修理材料模式 |
+| <code>bDynamicRepairMaterialCost</code> | 动态材料消耗 |
+| <code>bEnablePipboyJuryRepair</code> | Pip-Boy 混修 |
+| <code>bEnableWorkbenchMaterialRepair</code> | 工作台材料修理 |
+| <code>bEnableRepairKits</code> | 修理包 |
+| <code>bConfirmConsumeFavoriteMaterial</code> | 消耗收藏材料前确认 |
+| <code>bConfirmConsumeLegendaryMaterial</code> | 消耗传奇材料前确认 |
+| <code>fJuryRepairCap</code> | Pip-Boy 混修方法上限 |
+| <code>fWorkbenchRepairCap</code> | 工作台方法上限 |</p>
+<p>维修最终上限还会经过 <code>Repair/OverRepair/</code> 中的技能档位，实际使用两者的较小值。</p>
+<h2>Debug</h2>
+<p>| 键 | 作用 |
+|---|---|
+| <code>bEnableLogging</code> | 写入 <code>ConditionSystemFramework.log</code> 的详细诊断日志 |</p>
+<p>遇到 Provider 未选中、FormID 未解析、分类错误或技能未识别时，先开启该项，再完全重启游戏复现。日志比只看 MCM 页面更能区分“配置未加载”和“规则加载但条件未命中”。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>

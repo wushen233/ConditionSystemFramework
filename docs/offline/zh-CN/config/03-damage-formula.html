@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>伤害公式模块</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; line-height: 1.65; }
+    body { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; color: #202124; background: #f7f8fa; }
+    header { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin-bottom: 1.5rem; padding-bottom: .9rem; border-bottom: 1px solid #d9dde3; }
+    header strong { margin-right: auto; font-size: 1.1rem; }
+    header a { color: #1558a6; text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main { padding: 1.5rem 1.75rem; background: #fff; border: 1px solid #e2e5e9; border-radius: 10px; box-shadow: 0 4px 18px rgba(32, 33, 36, .06); }
+    h1, h2, h3 { line-height: 1.25; color: #172b4d; }
+    h1 { margin-top: 0; padding-bottom: .65rem; border-bottom: 2px solid #d7e3f4; }
+    a { color: #1558a6; }
+    code { padding: .12em .3em; border-radius: 4px; background: #eef1f5; font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border-radius: 7px; background: #1f2937; color: #f3f4f6; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { padding: .55rem .7rem; border: 1px solid #d9dde3; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; }
+    blockquote { margin-left: 0; padding: .5rem 1rem; border-left: 4px solid #9bbce2; background: #f3f7fc; }
+    footer { margin-top: 1.25rem; color: #697586; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Condition System Framework</strong>
+    <a href="../../README_CN.html">文档首页</a>
+    <a href="../config-guide.html">配置总指南</a>
+    <a href="../../en-US/config/03-damage-formula.html">English</a>
+  </header>
+  <main>
+<h1>伤害公式模块</h1>
+<p>运行时目录：</p>
+<pre><code class="language-text">Data/F4SE/Plugins/ConditionSystemFramework/Durability/DamageFormula/
+</code></pre>
+<p>当前 loader 会读取目录中的 <code>DamageFormula</code> 对象。实际读取的字段只有下面七个：</p>
+<pre><code class="language-jsonc">{
+  &quot;DamageFormula&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;baseHardness&quot;: 1.0,
+    &quot;glanceThreshold&quot;: 0.3,
+    &quot;glanceMultiplier&quot;: 0.1,
+    &quot;scratchThreshold&quot;: 0.7,
+    &quot;scratchMultiplier&quot;: 0.4,
+    &quot;durabilityDamageConstant&quot;: 0.15
+  }
+}
+</code></pre>
+<h2>计算路径</h2>
+<p>命中数据可用时，CSF 先计算：</p>
+<pre><code class="language-text">blockPercentage = totalResisted / totalRawDamage
+</code></pre>
+<p>然后根据拦截率选择磨损阶段：</p>
+<p>| 条件 | 阶段 | 使用倍率 |
+|---|---|---|
+| <code>blockPercentage &gt;= glanceThreshold</code>，或 &gt;= 0.90 | 完美防御/装甲全额承受冲击 | <code>glanceMultiplier</code> |
+| <code>blockPercentage &lt;= scratchThreshold</code>，或 &lt;= 0.20 | 护甲被贯穿/未起到有效拦截 | <code>scratchMultiplier</code> |
+| 其他情况 | 常规拦截吸收 | <code>1.0</code> |</p>
+<p>命中数据可用时的基础耐久损耗为：</p>
+<pre><code class="language-text">totalResisted
+  * durabilityDamageConstant
+  * 阶段倍率
+  * 内外层倍率
+  * 动力甲框架倍率
+  * 弹药 armorDamageMult
+</code></pre>
+<p>没有命中数据时，CSF 使用有效抗性计算硬度：</p>
+<pre><code class="language-text">hardness = max(1.0, baseHardness + effectiveResist)
+durabilityCost = (totalImpact / hardness)
+                 * durabilityDamageConstant
+                 * 内外层倍率
+                 * 动力甲框架倍率
+                 * 弹药 armorDamageMult
+</code></pre>
+<p>之后还会套用护甲 OMOD、技能修正、<code>fArmorWearMultiplier</code>，最低损耗会被钳制到 0.01。</p>
+<h2>字段说明</h2>
+<p>| 字段 | 作用 |
+|---|---|
+| <code>enabled</code> | 当前会被 loader 读取，但计算路径没有用它作为旁路开关 |
+| <code>baseHardness</code> | 无命中数据路径的基础硬度 |
+| <code>glanceThreshold</code> | 进入低损耗拦截阶段的上限阈值 |
+| <code>glanceMultiplier</code> | 低损耗拦截阶段倍率 |
+| <code>scratchThreshold</code> | 进入穿透/低拦截阶段的阈值 |
+| <code>scratchMultiplier</code> | 穿透/低拦截阶段倍率 |
+| <code>durabilityDamageConstant</code> | 伤害转换为耐久损耗的总常数 |</p>
+<p>阈值是比例值，通常在 <code>0.0</code> 到 <code>1.0</code> 之间。不要把它们写成百分数 <code>30</code>、<code>70</code>。</p>
+<h2>当前文件中的 ratingMultipliers</h2>
+<p>当前示例 <code>01_DamageFormula.json</code> 还包含 <code>ratingMultipliers</code> 及若干伤害类型说明，但当前 <code>ProfileManager.cpp</code> 的 loader 没有读取这个对象，<code>DamageFormulaConfig</code> 也没有对应字段。因此目前修改 <code>ratingMultipliers</code> 不会改变运行时结果。</p>
+<p>这部分保留在示例文件中是历史设计痕迹，不能当作当前可配置功能。若以后启用伤害类型硬度倍率，需要同时修改 C++ 数据结构、loader、计算路径和文档。</p>
+<h2>与 MCM 的关系</h2>
+<ul>
+<li>当前源码虽然读取 <code>enabled</code>，但计算路径没有根据它跳过公式；它目前不能作为关闭开关。</li>
+<li><code>bEnableArmorCondition</code> 控制护甲耐久系统总开关。</li>
+<li><code>bArmorConditionAffectsResistance</code> 控制护甲当前耐久是否影响游戏抗性。</li>
+<li><code>fArmorWearMultiplier</code> 是公式结果之后的总磨损倍率。</li>
+</ul>
+<p>JSON 负责公式常数，MCM 负责用户运行时开关和总倍率；两者不是同一个配置层。</p>
+
+  </main>
+  <footer>Offline documentation. The Markdown source remains available in the <code>markdown</code> directory.</footer>
+</body>
+</html>
