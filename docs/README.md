@@ -20,3 +20,5 @@
 - `Classification_Repair_Author_Guide_EN.md`：分类与维修入口。
 
 `0_Example*.json` 仅保留为历史/辅助示例。实际字段和加载方式以 `data/F4SE/Plugins/ConditionSystemFramework/` 下当前活动配置以及中英文模块文档为准。
+
+本地离线阅读：双击 `offline/README_CN.html` 或 `offline/README_EN.html`，不需要访问 GitHub。
