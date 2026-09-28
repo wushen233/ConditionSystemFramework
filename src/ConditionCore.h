@@ -1,5 +1,6 @@
 #pragma once
 #include "ProfileManager.h" // 引入独立的配置管理器
+#include "WeaponFaultController.h"
 
 #include <unordered_map>
 #include <shared_mutex>
@@ -11,8 +12,7 @@
 #include <F4SE/Interfaces.h>
 #include <new>
 
-// 修正警告：将 struct TESMagicEffectApplyEvent 改为 class TESMagicEffectApplyEvent
-namespace RE { class Actor; class TESObjectREFR; class TESHitEvent; class TESMagicEffectApplyEvent; class BGSInventoryItem; class TESBoundObject; class TESObjectWEAP; class TESObjectARMO; class TESForm; class ExtraDataList; }
+namespace RE { class Actor; class TESObjectREFR; class TESHitEvent; class BGSInventoryItem; class TESBoundObject; class TESObjectWEAP; class TESObjectARMO; class TESForm; class ExtraDataList; }
 
 namespace ConditionSystem
 {
@@ -38,18 +38,36 @@ namespace ConditionSystem
         std::atomic<bool> enableLogging{ false };
 
         std::atomic<bool> enable{ true };
-        std::atomic<float> x{ 1460.0f };
-        std::atomic<float> y{ 1000.0f };
+        // 0 = Scaleform/SWF HUD (default), 1 = PrismaUI HUD.
+        std::atomic<int> widgetBackend{ 0 };
+        // Kept as a compatibility mirror for older callers/config migration.
+        std::atomic<bool> usePrismaUI{ false };
+        // Per-widget backends: 0 = PrismaUI, 1 = Scaleform/SWF.
+        std::atomic<int> unjamWidgetBackend{ 0 };
+        std::atomic<int> heatWidgetBackend{ 0 };
+        // SWF-only CND bar style: 0 = Fallout 4 FLA style, 1 = Fallout: New Vegas style.
+        std::atomic<int> swfCndStyle{ 0 };
+        std::atomic<float> x{ 975.0f };
+        std::atomic<float> y{ 667.0f };
         std::atomic<float> scale{ 1.0f };
 
         std::atomic<bool> showWidgetText{ true };
         std::atomic<bool> showItemCardCND{ true };
         std::atomic<int>  itemCardCNDPosition{ 2 };
+        // Per-widget colors: 0 = HUD color, 1 = custom color.
+        std::atomic<int>  cndColorMode{ 0 };
+        std::atomic<int>  unjamColorMode{ 0 };
+        std::atomic<int>  heatColorMode{ 0 };
         std::atomic<bool> useCustomColor{ false };
         std::atomic<int>  customColor{ 16777215 };
         std::atomic<float> unjamX{ 0.0f };
         std::atomic<float> unjamY{ 0.0f };
         std::atomic<float> unjamScale{ 1.0f };
+        // Heat coordinates use the same center-relative anchor as the unjam
+        // widget: (0, 0) is the screen center.
+        std::atomic<float> heatWidgetX{ 0.0f };
+        std::atomic<float> heatWidgetY{ 0.0f };
+        std::atomic<float> heatWidgetScale{ 1.0f };
         std::atomic<float> juryStatsOffsetX{ 0.0f };
         std::atomic<float> juryStatsOffsetY{ 0.0f };
         std::atomic<float> juryStatsRowSpacing{ 92.0f };
@@ -67,6 +85,18 @@ namespace ConditionSystem
         std::atomic<float> armorLootDurabilityMax{ 0.90f };
         std::atomic<float> jamThreshold{ 0.50f };
         std::atomic<float> maxJamChance{ 0.15f };
+        std::atomic<bool> enableEnergyFault{ true };
+        std::atomic<float> energyFaultChanceMultiplier{ 0.50f };
+        std::atomic<float> energyReloadFaultChanceMultiplier{ 0.25f };
+        std::atomic<float> energyFaultDuration{ 0.80f };
+        std::atomic<bool> enableWeaponOverheat{ true };
+        std::atomic<float> overheatHeatPerShot{ 0.02f };
+        std::atomic<float> overheatCooldownRate{ 0.30f };
+        std::atomic<float> overheatRecoveryThreshold{ 0.15f };
+        std::atomic<float> overheatWearMultiplier{ 2.0f };
+        std::atomic<float> weaponWearMultiplier{ 1.0f };
+        std::atomic<float> armorWearMultiplier{ 1.0f };
+        std::atomic<float> repairMaterialCostMultiplier{ 1.0f };
 
         std::atomic<int> iJammingPhase{ 0 }; // 0: 射击卡壳, 1: 换弹卡壳
 
@@ -88,9 +118,34 @@ namespace ConditionSystem
         std::atomic<bool> enableRepairKits{ true };
         std::atomic<bool> confirmConsumeFavoriteMaterial{ true };
         std::atomic<bool> confirmConsumeLegendaryMaterial{ true };
+        std::atomic<float> juryRepairCap{ 1.0f };
+        std::atomic<float> workbenchRepairCap{ 2.0f };
     };
 
-    bool RollForJam(float durability);
+    float GetWeaponFaultChance(float durability, WeaponMechanism a_mechanism = WeaponMechanism::Auto);
+    bool RollForJam(float durability, WeaponMechanism a_mechanism = WeaponMechanism::Auto);
+    WeaponMechanism GetWeaponMechanism(RE::TESObjectWEAP* a_weapon, RE::TESAmmo* a_ammo = nullptr, const WeaponProfile* a_profile = nullptr);
+    WeaponMechanism GetEquippedWeaponMechanism();
+    bool IsEnergyWeapon(RE::TESObjectWEAP* a_weapon, RE::TESAmmo* a_ammo = nullptr);
+    bool IsEquippedWeaponEnergy();
+    bool IsHeatManagedWeapon(RE::TESObjectWEAP* a_weapon, RE::TESAmmo* a_ammo = nullptr);
+    bool IsEquippedWeaponHeatManaged();
+    void UpdateWeaponHeat(bool a_force = false);
+    void ProcessWeaponHeat(RE::Actor* a_actor);
+    void StartEnergyFault();
+    void UpdateEnergyFault();
+    bool StartBallisticJam();
+    void SetActiveWeaponInstance(const WeaponInstanceIdentity& a_weapon);
+    WeaponInstanceIdentity BuildWeaponInstanceIdentity(RE::TESObjectWEAP* a_weapon, RE::BGSInventoryItem::Stack* a_stack);
+    WeaponInstanceIdentity GetEquippedWeaponInstanceIdentity();
+    WeaponFaultSnapshot GetWeaponFaultSnapshot();
+    bool IsCurrentWeaponJammed();
+    bool IsCurrentWeaponEnergyFault();
+    bool IsCurrentWeaponOverheated();
+    bool IsCurrentWeaponBlocked();
+    bool ClearCurrentWeaponFault();
+    bool ClearWeaponFault(const WeaponInstanceIdentity& a_weapon);
+    void ResetWeaponFaultState();
 
     // 声明唯一的全局配置实例
     extern MCMSettings g_mcmSettings;
@@ -133,9 +188,14 @@ namespace ConditionSystem
 
     extern std::atomic<bool> g_isGameRunning;
     extern std::atomic<bool> g_isWeaponJammed;
+    extern std::atomic<FaultType> g_faultType;
+    extern std::atomic<float> g_weaponHeat;
+    extern std::atomic<std::uintptr_t> g_heatWeaponUniqueID;
+    extern std::atomic<float> g_energyFaultRemaining;
     extern std::atomic<std::uintptr_t> g_jammedWeaponUniqueID;
     extern std::atomic<bool> g_isWeaponDrawn;
     extern std::atomic<bool> g_isUnjamming;
+    extern std::atomic<float> g_unjamProgress;
     extern std::atomic<bool> g_isRepairMenuOpen;
 
     extern std::atomic<RE::TESBoundObject*> g_hoveredObject;
@@ -180,6 +240,7 @@ namespace ConditionSystem
     void RegisterSerialization(const F4SE::SerializationInterface* a_intfc);
 
     // 补全 F4SE 读写存盘的关键服务端通信接口，供 main.cpp 安全调用
+    void OnRevert(const F4SE::SerializationInterface* a_intfc);
     void OnSave(const F4SE::SerializationInterface* a_intfc);
     void OnLoad(const F4SE::SerializationInterface* a_intfc);
 
@@ -194,8 +255,14 @@ namespace ConditionSystem
     float GetEquippedWeaponDurabilityPoints();
     float GetAverageEquippedArmorDurability();
     float GetItemDurabilityPercent(RE::BGSInventoryItem* a_item, std::uint32_t a_stackID);
-    float GetStackDurabilityPercent(RE::BGSInventoryItem::Stack* a_stack);
+    float GetStackDurabilityPercent(RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack);
+    // Used by hooks that already receive the exact inventory ExtraDataList.
+    float GetExtraDataDurabilityPercent(RE::TESBoundObject* a_object, const RE::ExtraDataList* a_extra);
     float GetVisualDurabilityPercent(RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack);
+
+    // Rebuild the player's native armor rating after equipment, durability, or
+    // the armor-condition MCM setting changes.
+    void QueuePlayerArmorRatingRefresh(bool a_force = false);
 
     // 初始化、刷新与同步功能
     void InitializeEquippedWeapon(RE::Actor* a_actor);
@@ -213,6 +280,8 @@ namespace ConditionSystem
 
     // 跨模块工具函数
     std::string GameUTF8ToLocal(const char* utf8Str);
+    // Returns the localized vanilla GameSetting text, falling back to a CSF translation key.
+    const char* GetGameSettingText(const char* a_editorID, const char* a_fallback);
     std::vector<std::string> ExtractKeywords(RE::TESForm* form);
 
     // 读档后同步武器拔出状态 & UI
@@ -221,7 +290,6 @@ namespace ConditionSystem
     // 扣血（磨损）核心分发逻辑
     void DeductEquippedWeaponDurability(RE::Actor* a_actor, bool a_requireMelee);
     void DeductEquippedArmorDurability(RE::Actor* a_actor, const RE::TESHitEvent& a_event);
-    void DeductEquippedArmorDurabilityFromMagic(RE::Actor* a_actor, const RE::TESMagicEffectApplyEvent& a_event);
 
     void TriggerFullUnjam(RE::Actor* a_actor);
 }

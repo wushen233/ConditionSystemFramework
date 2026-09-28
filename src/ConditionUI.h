@@ -6,17 +6,51 @@
 
 namespace ConditionSystem
 {
+    class CndWidgetUI : public RE::GameMenuBase
+    {
+    public:
+        static constexpr auto MENU_NAME = "ConditionCndWidgetMenu";
+        CndWidgetUI();
+        virtual ~CndWidgetUI();
+        static RE::IMenu* CreateMenu(const RE::UIMessage&);
+        static void RegisterMenu();
+    };
+
+    class UnjamWidgetUI : public RE::GameMenuBase
+    {
+    public:
+        static constexpr auto MENU_NAME = "ConditionUnjamWidgetMenu";
+        UnjamWidgetUI();
+        virtual ~UnjamWidgetUI();
+        static RE::IMenu* CreateMenu(const RE::UIMessage&);
+        static void RegisterMenu();
+    };
+
+    class HeatWidgetUI : public RE::GameMenuBase
+    {
+    public:
+        static constexpr auto MENU_NAME = "ConditionHeatWidgetMenu";
+        HeatWidgetUI();
+        virtual ~HeatWidgetUI();
+        static RE::IMenu* CreateMenu(const RE::UIMessage&);
+        static void RegisterMenu();
+        static void OpenMenu();
+        static void CloseMenu();
+    };
+
     // =========================================================================
     // 模块 1：独立 HUD 菜单类 (Scaleform/QuickLoot 轮询 + PrismaUI HUD 渲染)
     // =========================================================================
     class ConditionUI : public RE::GameMenuBase 
     {
     public:
-        // 游戏内注册的菜单名称 (保留给 QuickLoot 耐久数据轮询)
+        // Always-open native scheduler name for QuickLoot and HUD visibility polling.
+        // This menu is intentionally rootless; the four standalone widget menus
+        // are the only Scaleform movies loaded by CSF.
         static constexpr auto MENU_NAME = "ConditionWidgetMenu";
 
         ConditionUI();
-        virtual ~ConditionUI() = default;
+        virtual ~ConditionUI();
 
         // ----------------------------------------------------
         // 菜单生命周期管理
@@ -25,6 +59,7 @@ namespace ConditionSystem
         static void RegisterMenu();
         static void InitializePrisma();
         static void CreatePrismaView();
+        static void RefreshBackend();
         static void OpenMenu();
         static void CloseMenu();
         
@@ -39,6 +74,7 @@ namespace ConditionSystem
         // HUD 耐久度小部件交互 (右下角主件)
         // ----------------------------------------------------
         static void UpdateDurability(float a_percent, float a_points);
+        static void UpdateHeat(float a_heat, bool a_overheated, bool a_visible);
         static void UpdateTextVisibility(bool a_show); 
         static void UpdateVisuals(float a_x, float a_y, float a_scale);
 
@@ -54,6 +90,7 @@ namespace ConditionSystem
         static void ShowUnjammingUI(bool a_show);
         static void UpdateUnjammingProgress(float a_percent);
         static void UpdateUnjamVisuals(float a_offsetX, float a_offsetY, float a_scale);
+        static void UpdateHeatVisuals(float a_x, float a_y, float a_scale);
         
         // ----------------------------------------------------
         // 底层重写

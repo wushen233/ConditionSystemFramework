@@ -1,0 +1,66 @@
+{
+  /*
+   * CSF 原版与 DLC 武器排除 Provider。
+   *
+   * Weapon.Flag.Ignore 是独立可共存标记，不参加 Family、Handling、
+   * Configuration 的冲突解析。其 FLST 允许 KYWD、WEAP 和嵌套 FLST。
+   *
+   * 建议列表内容：
+   * - crWeaponRanged
+   * - WeaponTypeGrenade / WeaponTypeMine / WeaponTypeThrown
+   * - VRWorkshopShared_Keyword_NerfedWeapon
+   * - 明确的测试和 Dummy WEAP
+   *
+   * WeaponTypeUnarmed 不应直接加入，因为正常拳套类武器也携带该 Keyword。
+   */
+  "schemaVersion": 3,
+  "module": "weaponClassifications",
+  "domain": "weapon",
+  "provider": "CSF Vanilla Weapon Exclusions",
+  "requires": [
+    "Condition System Framework.esp"
+  ],
+  "ProviderPriority": 0,
+  "defaults": {
+    "idMatching": "caseSensitive",
+    "memberPriorityPolicy": "uniformPerSourceList"
+  },
+  "groups": {
+    // 独立标记组；未来可以继续追加 NoDonor 等可共存武器标记。
+    "Weapon.Flag": {
+      "mode": "coexisting"
+    }
+  },
+  "instanceSemantics": {
+    "keywordMode": "effectiveAddedOnly",
+    "omodMode": "installedOnly"
+  },
+  "resolution": {
+    "contextPriorities": {
+      "base": 100,
+      "instance": 200
+    },
+    "sourceOrder": [
+      "providerOrder",
+      "contextPriority",
+      "modRolePriority",
+      "listPriority"
+    ],
+    "sameCategoryAggregation": "highestStrength",
+    "deterministicTieBreak": "ruleId",
+    "differentCategoriesAtEqualStrength": "groupPolicy"
+  },
+  "modRoles": {},
+  "classifications": {
+    "Weapon.Flag.Ignore": [
+      {
+        // CSF_FLST_WeaponIgnore
+        "list": "Condition System Framework.esp|0x000F92",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 0
+      }
+    ]
+  }
+}

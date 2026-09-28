@@ -3,6 +3,8 @@
 #include "ConditionUI.h"
 #include "ConditionWorkbench.h"
 #include "ProfileManager.h"
+#include "ConditionMath.h"
+#include "Repair/RepairSystem.h"
 
 #include <shared_mutex>
 
@@ -17,8 +19,24 @@ namespace ConditionSystem
         std::unique_lock<std::shared_mutex> lock(g_cacheMutex);
         g_baseDamageCache.clear();
 
+        ResetWeaponFaultState();
+        g_isWeaponDrawn.store(false);
+        g_isUnjamming.store(false);
+        g_unjamProgress.store(0.0f);
+        g_isRepairMenuOpen.store(false);
+        g_hoveredObject.store(nullptr);
+        g_hoveredStackIndex.store(0);
+        g_hoveredSelectedIndex.store(0);
+        g_highlightedItem.store(nullptr);
+        g_highlightedStack.store(nullptr);
+        g_pipboyHighlightedUID.store(0);
+        g_pipboyTransitionTimer.store(0);
+        g_hoveredHandleID.store(0);
+        Repair::ResetRuntimeState();
+
         g_customUIDCounter.store(0x8000);
         g_initialUISyncDone.store(false);
+        g_damageFormula = DamageFormulaConfig();
 
         // 清空配方缓存，读档后自动重新构建
         Workbench::ResetRecipeCache();
@@ -65,31 +83,74 @@ namespace ConditionSystem
         std::unique_lock<std::shared_mutex> lock(g_cacheMutex);
         std::uint32_t type, version, length;
 
-        // 先重置到默认值，再逐个读取记录
+        // 先清理前一份存档留下的运行时缓存，再逐个读取当前存档记录。
+        g_baseDamageCache.clear();
+        g_customUIDCounter.store(0x8000);
         g_damageFormula = DamageFormulaConfig();
 
         while (a_intfc->GetNextRecordInfo(type, version, length)) {
             if (type == 'BDMG') {
-                std::size_t size;
-                a_intfc->ReadRecordData(&size, sizeof(size));
+                if (length < sizeof(std::size_t)) {
+                    REX::WARN("Serialization: ignoring truncated BDMG record ({} bytes).", length);
+                    continue;
+                }
+
+                std::size_t size = 0;
+                if (!a_intfc->ReadRecordData(&size, sizeof(size))) {
+                    REX::WARN("Serialization: failed to read BDMG entry count.");
+                    continue;
+                }
+
+                constexpr std::size_t entrySize = sizeof(std::uint32_t) + sizeof(std::uint16_t);
+                const auto maxEntries = (static_cast<std::size_t>(length) - sizeof(std::size_t)) / entrySize;
+                if (size > maxEntries) {
+                    REX::WARN("Serialization: clamping BDMG entry count from {} to {}.", size, maxEntries);
+                    size = maxEntries;
+                }
+
                 for (std::size_t i = 0; i < size; ++i) {
                     std::uint32_t uid;
                     std::uint16_t dmg;
-                    a_intfc->ReadRecordData(&uid, sizeof(uid));
-                    a_intfc->ReadRecordData(&dmg, sizeof(dmg));
+                    if (!a_intfc->ReadRecordData(&uid, sizeof(uid)) || !a_intfc->ReadRecordData(&dmg, sizeof(dmg))) {
+                        REX::WARN("Serialization: truncated BDMG entry {}.", i);
+                        break;
+                    }
                     g_baseDamageCache[uid] = dmg;
                 }
             } else if (type == 'DMGF' && version >= 1) {
-                auto& formula = g_damageFormula;
-                a_intfc->ReadRecordData(&formula.enabled, sizeof(formula.enabled));
-                a_intfc->ReadRecordData(&formula.baseHardness, sizeof(formula.baseHardness));
-                a_intfc->ReadRecordData(&formula.glanceThreshold, sizeof(formula.glanceThreshold));
-                a_intfc->ReadRecordData(&formula.glanceMultiplier, sizeof(formula.glanceMultiplier));
-                a_intfc->ReadRecordData(&formula.scratchThreshold, sizeof(formula.scratchThreshold));
-                a_intfc->ReadRecordData(&formula.scratchMultiplier, sizeof(formula.scratchMultiplier));
-                a_intfc->ReadRecordData(&formula.durabilityDamageConstant, sizeof(formula.durabilityDamageConstant));
+                DamageFormulaConfig loadedFormula{};
+                const auto readFormulaField = [&](auto& field) {
+                    return a_intfc->ReadRecordData(&field, sizeof(field));
+                };
+                const bool loaded =
+                    readFormulaField(loadedFormula.enabled) &&
+                    readFormulaField(loadedFormula.baseHardness) &&
+                    readFormulaField(loadedFormula.glanceThreshold) &&
+                    readFormulaField(loadedFormula.glanceMultiplier) &&
+                    readFormulaField(loadedFormula.scratchThreshold) &&
+                    readFormulaField(loadedFormula.scratchMultiplier) &&
+                    readFormulaField(loadedFormula.durabilityDamageConstant);
+                if (loaded) {
+                    Math::NormalizePhaseThresholds(loadedFormula.glanceThreshold, loadedFormula.scratchThreshold);
+                    g_damageFormula = loadedFormula;
+                }
+                else REX::WARN("Serialization: ignoring truncated DMGF record ({} bytes).", length);
             }
         }
+        ResetWeaponFaultState();
+        g_isWeaponDrawn.store(false);
+        g_isUnjamming.store(false);
+        g_unjamProgress.store(0.0f);
+        g_isRepairMenuOpen.store(false);
+        g_hoveredObject.store(nullptr);
+        g_hoveredStackIndex.store(0);
+        g_hoveredSelectedIndex.store(0);
+        g_highlightedItem.store(nullptr);
+        g_highlightedStack.store(nullptr);
+        g_pipboyHighlightedUID.store(0);
+        g_pipboyTransitionTimer.store(0);
+        g_hoveredHandleID.store(0);
+        Repair::ResetRuntimeState();
         g_initialUISyncDone.store(false);
     }
 

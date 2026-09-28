@@ -1,0 +1,368 @@
+{
+  /*
+   * Standalone Repair Skill Provider。
+   *
+   * 唯一混修技能来源：
+   *   RepairAlone [AVIF: StandaloneRepair.esp|0x00000800]
+   *
+   * RepairAloneLightTouch 和 RepairAloneHandLoader 是原模组自己的特殊
+   * 加成 Perk，不决定 CSF 混修资格，也不写入任何 RequiredSkill。
+   *
+   * Repair 25：共享 Family、相同 Handling。
+   * Repair 50：允许跨 Family，但 Handling 仍需相同。
+   * Repair 75：共享 Family，允许跨 Handling。
+   * Repair 100：同装备大类内通用混修。
+   */
+  "RequiredPlugin": "StandaloneRepair.esp",
+  "schemaVersion": 3,
+  "module": "Repair.JuryRigging",
+  // 安装后优先成为 CSF 的混修技能 Provider，不依赖插件加载顺序。
+  "ProviderPriority": 1000,
+  "JuryRiggingRules": [
+    {
+      "RuleName": "Exact Base Weapon With Same Handling",
+      "Priority": 300,
+      "MaterialConditionMultiplier": 1.0,
+      "AppliesTo": {
+        "target": { "all": ["weapon"], "none": ["Weapon.Flag.Ignore"] },
+        "material": { "all": ["weapon"], "none": ["Weapon.Flag.Ignore"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameBase" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Exact Base Armor",
+      "Priority": 300,
+      "MaterialConditionMultiplier": 1.0,
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": { "all": [{ "type": "sameBase" }] }
+    },
+    {
+      // 远程武器的基础技术兼容规则。
+      "RuleName": "Ranged Weapons: Same Family and Handling (Repair 25)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 25.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      },
+      "EfficiencyModifiers": [
+        {
+          "type": "optionalGroupMultiplier",
+          "group": "Weapon.Configuration",
+          "same": 1.0,
+          "different": 0.8,
+          "oneMissing": 0.9
+        }
+      ]
+    },
+    {
+      "RuleName": "Ranged Weapons: Same Handling Across Family (Repair 50)",
+      "Priority": 150,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 50.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Weapon.Handling" }]
+      },
+      "EfficiencyModifiers": [
+        {
+          "type": "optionalGroupMultiplier",
+          "group": "Weapon.Configuration",
+          "same": 1.0,
+          "different": 0.8,
+          "oneMissing": 0.9
+        }
+      ]
+    },
+    {
+      "RuleName": "Ranged Weapons: Cross Handling Within Family (Repair 75)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 75.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      "RuleName": "Ranged Weapons: Universal Repair (Repair 100)",
+      "Priority": 50,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 100.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Ballistic",
+            "Weapon.Family.Energy",
+            "Weapon.Family.Launcher",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": { "all": [{ "type": "always" }] }
+    },
+    {
+      "RuleName": "Melee: Same Handling (Repair 25)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 25.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Melee"] },
+        "material": { "all": ["Weapon.Family.Melee"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Melee: Cross Handling (Repair 75)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 75.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Melee"] },
+        "material": { "all": ["Weapon.Family.Melee"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      "RuleName": "Unarmed: Same Handling (Repair 25)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 25.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Unarmed"] },
+        "material": { "all": ["Weapon.Family.Unarmed"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      // 护甲保持 Material/Region/Grade 三层语义。
+      "RuleName": "Armor: Same Material, Region and Grade (Repair 25)",
+      "Priority": 250,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 25.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameGroup", "group": "Armor.Region" },
+          { "type": "sameGroup", "group": "Armor.Material" },
+          { "type": "sameOptionalGroup", "group": "Armor.Grade" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Armor: Same Material and Region (Repair 50)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 0.9,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 50.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameGroup", "group": "Armor.Region" },
+          { "type": "sameGroup", "group": "Armor.Material" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Clothing: Same Repair Region (Repair 25)",
+      "Priority": 190,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 25.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor", "Armor.Material.Textile"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor", "Armor.Material.Textile"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Armor.Region" }]
+      }
+    },
+    {
+      "RuleName": "Armor: Universal Same Region (Repair 75)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 75.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Armor.Region" }]
+      }
+    },
+    {
+      "RuleName": "Armor: Universal Repair (Repair 100)",
+      "Priority": 50,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "StandaloneRepair.esp",
+        "FormID": "0x00000800"
+      },
+      "SkillThresholds": [{ "threshold": 100.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": { "all": [{ "type": "always" }] }
+    }
+  ]
+}

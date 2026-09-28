@@ -1,0 +1,81 @@
+{
+  // 武器基础耐久只由最终主体形态决定。
+  // Family 和 Configuration 的技术差异由 CategoryModifiers 叠加。
+  "profiles": [
+    {
+      "name": "HeavyWeaponBase",
+      "priority": 600,
+      "maxDurability": 3200.0,
+      "degradeRate": 1.0,
+      "canJam": true,
+      "mechanism": "auto",
+      "AppliesTo": { "all": [ "Weapon.Handling.Heavy" ] }
+    },
+    {
+      "name": "RifleBase",
+      "priority": 500,
+      "maxDurability": 1200.0,
+      "degradeRate": 2.0,
+      "canJam": true,
+      "mechanism": "auto",
+      "AppliesTo": { "all": [ "Weapon.Handling.Rifle" ] }
+    },
+    {
+      "name": "PistolBase",
+      "priority": 500,
+      "maxDurability": 800.0,
+      "degradeRate": 1.0,
+      "canJam": true,
+      "mechanism": "auto",
+      "AppliesTo": { "all": [ "Weapon.Handling.Pistol" ] }
+    },
+    {
+      "name": "Melee2HBase",
+      "priority": 500,
+      "maxDurability": 1400.0,
+      "degradeRate": 2.0,
+      "canJam": false,
+      "mechanism": "none",
+      "AppliesTo": { "all": [ "Weapon.Handling.Melee2H" ] }
+    },
+    {
+      "name": "Melee1HBase",
+      "priority": 500,
+      "maxDurability": 900.0,
+      "degradeRate": 1.5,
+      "canJam": false,
+      "mechanism": "none",
+      "AppliesTo": { "all": [ "Weapon.Handling.Melee1H" ] }
+    },
+    {
+      "name": "UnarmedBase",
+      "priority": 500,
+      "maxDurability": 1000.0,
+      "degradeRate": 1.5,
+      "canJam": false,
+      "mechanism": "none",
+      "AppliesTo": { "all": [ "Weapon.Handling.Unarmed" ] }
+    },
+    {
+      // 只有技术家族、没有可靠 Handling 的第三方武器使用此基准。
+      "name": "KnownWeaponFallback",
+      "priority": 0,
+      "maxDurability": 1000.0,
+      "degradeRate": 2.0,
+      "canJam": true,
+      "mechanism": "auto",
+      "AppliesTo": {
+        "any": [
+          "Weapon.Family.Ballistic",
+          "Weapon.Family.Energy",
+          "Weapon.Family.Launcher",
+          "Weapon.Family.Electromagnetic",
+          "Weapon.Family.Gamma",
+          "Weapon.Family.Alien",
+          "Weapon.Family.Melee",
+          "Weapon.Family.Unarmed"
+        ]
+      }
+    }
+  ]
+}

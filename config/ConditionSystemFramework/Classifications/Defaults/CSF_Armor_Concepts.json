@@ -1,0 +1,238 @@
+{
+  /*
+   * CSF 原版普通衣物与护甲三层分类 Provider。
+   *
+   * Armor.Material：维修材质，最终只选择一个。
+   * Armor.Region：维修区域，最终只选择一个；未命中时由 C++ 使用 BOD2 兜底。
+   * Armor.Grade：轻型/坚固/重型，可为空，只有 Size 角色能由实例覆盖。
+   *
+   * Tier、Lining、Weave、Paint、Legendary、Misc 都会被识别为实例角色，
+   * 但不参与三层分类。它们留给独立 Armor Modifier 系统使用。
+   */
+  "schemaVersion": 3,
+  "module": "armorClassifications",
+  "domain": "armor",
+  "provider": "CSF Vanilla Armor Classification",
+  "requires": [
+    "Condition System Framework.esp"
+  ],
+  "ProviderPriority": 0,
+  "defaults": {
+    "idMatching": "caseSensitive",
+    "memberPriorityPolicy": "uniformPerSourceList"
+  },
+  "groups": {
+    "Equipment.Domain": {
+      "mode": "exclusive",
+      "unresolvedTie": "unknown"
+    },
+    "Armor.Material": {
+      "mode": "exclusive",
+      "unresolvedTie": "unknown"
+    },
+    "Armor.Region": {
+      "mode": "exclusive",
+      "unresolvedTie": "unknown"
+    },
+    "Armor.Grade": {
+      "mode": "optionalExclusive",
+      "unresolvedTie": "unknown"
+    }
+  },
+  "instanceSemantics": {
+    "keywordMode": "effectiveAddedOnly",
+    "omodMode": "installedOnly"
+  },
+  "resolution": {
+    "contextPriorities": {
+      "bod2Fallback": 50,
+      "base": 100,
+      "instance": 200
+    },
+    "sourceOrder": [
+      "providerOrder",
+      "contextPriority",
+      "modRolePriority",
+      "listPriority"
+    ],
+    "sameCategoryAggregation": "highestStrength",
+    "deterministicTieBreak": "ruleId",
+    "differentCategoriesAtEqualStrength": "groupPolicy"
+  },
+  "modRoles": {
+    "Size": [
+      {
+        // 只有 Size 可以根据当前实例 OMOD 决定 Grade。
+        "list": "Condition System Framework.esp|0x000F70",
+        "priorities": {
+          "Armor.Grade": 700
+        }
+      }
+    ],
+    "Tier": [
+      {
+        // 护甲家族内部强化等级，不是 Material，也不是 Grade。
+        "list": "Condition System Framework.esp|0x000F71",
+        "priorities": {}
+      }
+    ],
+    "Lining": [
+      {
+        "list": "Condition System Framework.esp|0x000F72",
+        "priorities": {}
+      }
+    ],
+    "Weave": [
+      {
+        "list": "Condition System Framework.esp|0x000F73",
+        "priorities": {}
+      }
+    ],
+    "Paint": [
+      {
+        "list": "Condition System Framework.esp|0x000F74",
+        "priorities": {}
+      }
+    ],
+    "Legendary": [
+      {
+        "list": "Condition System Framework.esp|0x000F75",
+        "priorities": {}
+      }
+    ],
+    "Misc": [
+      {
+        "list": "Condition System Framework.esp|0x000F93",
+        "priorities": {}
+      }
+    ],
+    "unknownModRole": {
+      // 未注册的社区护甲 AP 默认不允许改变核心分类。
+      "allowClassification": false,
+      "priorities": {}
+    }
+  },
+  "classifications": {
+    "Equipment.Domain.PowerArmor": [
+      {
+        // 命中后退出普通 Armor 分类，保留原版动力装甲耐久。
+        "list": "Condition System Framework.esp|0x000F5D",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Material.Textile": [
+      {
+        "list": "Condition System Framework.esp|0x000F59",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Material.Flexible": [
+      {
+        "list": "Condition System Framework.esp|0x000F5A",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Material.Rigid": [
+      {
+        "list": "Condition System Framework.esp|0x000F5B",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Material.Scrap": [
+      {
+        "list": "Condition System Framework.esp|0x000F5C",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Region.Torso": [
+      {
+        "list": "Condition System Framework.esp|0x000F5E",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Region.Limbs": [
+      {
+        "list": "Condition System Framework.esp|0x000F5F",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Region.Head": [
+      {
+        "list": "Condition System Framework.esp|0x000F60",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Region.Face": [
+      {
+        "list": "Condition System Framework.esp|0x000F61",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Region.Accessory": [
+      {
+        "list": "Condition System Framework.esp|0x000F62",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Grade.A": [
+      {
+        "list": "Condition System Framework.esp|0x000F63",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Grade.B": [
+      {
+        "list": "Condition System Framework.esp|0x000F64",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Armor.Grade.C": [
+      {
+        "list": "Condition System Framework.esp|0x000F65",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ]
+  }
+}

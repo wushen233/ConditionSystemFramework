@@ -1,0 +1,32 @@
+{
+  /*
+   * Optional Creation Club grenade launcher bridge.
+   *
+   * The two CC keywords live in a separate ESL-flagged patch plugin so the
+   * main CSF plugin stays loadable on Fallout 4 1.10.163 installations that
+   * do not contain ccSBJFO4003-Grenade.esl.
+   */
+  "schemaVersion": 3,
+  "module": "weaponClassifications",
+  "domain": "weapon",
+  "provider": "CSF Creation Club Grenade Launcher Classification",
+  "requires": [
+    "CSF_CCSBJFO4003_Grenade.esp",
+    "ccSBJFO4003-Grenade.esl"
+  ],
+  "ProviderPriority": 100,
+  "groups": {
+    "Weapon.Family": {
+      "mode": "coexisting"
+    }
+  },
+  "classifications": {
+    "Weapon.Family.Launcher": [
+      {
+        "list": "CSF_CCSBJFO4003_Grenade.esp|0x0000A001",
+        "contexts": ["base", "instance"],
+        "listPriority": 100
+      }
+    ]
+  }
+}

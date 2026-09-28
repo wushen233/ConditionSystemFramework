@@ -37,8 +37,8 @@
     --cnd-w: 56px;
     --cnd-font: 18px;
     --cnd-line: 20px;
-    --tier-x: 144px;
-    --tier-y: 4px;
+    --tier-x: 117px;
+    --tier-y: 8px;
     --marker-w: 8px;
     --notch-x: 1px;
     --notch-top-left: 3px;
@@ -165,6 +165,146 @@
     text-shadow: 1px 1px 0 #000;
   }
 
+  #heat-widget {
+    position: fixed;
+    left: 50vw;
+    top: 50vh;
+    width: 168px;
+    height: 38px;
+    margin-left: -84px;
+    margin-top: -19px;
+    transform-origin: 84px 19px;
+    display: none;
+    --heat-color: #f7f7ee;
+    color: var(--heat-color);
+    font-family: "Arial Black", "Impact", "Arial", sans-serif;
+    font-size: 14px;
+    line-height: 17px;
+    font-weight: 900;
+    text-shadow: 1px 1px 0 #000;
+  }
+
+  #heat-shell {
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 160px;
+    height: 13px;
+    border: 2px solid var(--heat-color);
+    background: transparent;
+    overflow: hidden;
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.9);
+  }
+
+  #heat-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    background: var(--heat-color);
+    z-index: 1;
+  }
+
+  #heat-ticks {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .heat-tick {
+    position: absolute;
+    bottom: 0;
+    width: 2px;
+    height: 5px;
+    background: var(--heat-color);
+    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.55);
+  }
+
+  .heat-tick.tick-1 { left: 20%; }
+  .heat-tick.tick-2 { left: 40%; }
+  .heat-tick.tick-3 { left: 60%; }
+  .heat-tick.tick-4 { left: 80%; }
+
+  #heat-percent,
+  #heat-alert {
+    position: absolute;
+    left: 0;
+    top: 16px;
+    width: 168px;
+    height: 19px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  #heat-percent {
+    color: var(--heat-color);
+  }
+
+  #heat-alert {
+    display: none;
+    color: #9a6a2f;
+    letter-spacing: 0;
+  }
+
+  #heat-widget.overheated #heat-shell {
+    border-color: #e21e2a;
+    box-shadow: 0 0 5px rgba(226, 30, 42, 0.9);
+  }
+
+  #heat-widget.overheated #heat-bar {
+    background: #e21e2a;
+  }
+
+  #heat-widget.overheated #heat-alert {
+    color: #e21e2a;
+  }
+
+  @keyframes csf-overheat-shell-flash {
+    0%, 49.99% {
+      border-color: #e21e2a;
+      box-shadow: 0 0 5px rgba(226, 30, 42, 0.9);
+    }
+    50%, 100% {
+      border-color: #f2dc00;
+      box-shadow: 0 0 5px rgba(242, 220, 0, 0.9);
+    }
+  }
+
+  @keyframes csf-overheat-fill-flash {
+    0%, 49.99% { background: #e21e2a; }
+    50%, 100% { background: #f2dc00; }
+  }
+
+  @keyframes csf-overheat-text-flash {
+    0%, 49.99% { color: #e21e2a; }
+    50%, 100% { color: #f2dc00; }
+  }
+
+  #heat-widget.overheated #heat-shell {
+    animation: csf-overheat-shell-flash 650ms steps(1, end) infinite;
+  }
+
+  #heat-widget.overheated #heat-bar {
+    animation: csf-overheat-fill-flash 650ms steps(1, end) infinite;
+  }
+
+  #heat-widget.overheated #heat-alert {
+    animation: csf-overheat-text-flash 650ms steps(1, end) infinite;
+  }
+
+  #heat-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    z-index: 3;
+    pointer-events: none;
+  }
+
   #unjam-widget {
     position: absolute;
     left: 50vw;
@@ -200,7 +340,20 @@
       <div id="trail-bar"></div>
       <div id="cnd-bar"></div>
     </div>
-    <div id="tier-text">x2</div>
+    <div id="tier-text">X2</div>
+  </div>
+  <div id="heat-widget">
+    <div id="heat-shell">
+      <div id="heat-bar"></div>
+      <div id="heat-ticks" aria-hidden="true">
+        <span class="heat-tick tick-1"></span>
+        <span class="heat-tick tick-2"></span>
+        <span class="heat-tick tick-3"></span>
+        <span class="heat-tick tick-4"></span>
+      </div>
+    </div>
+    <div id="heat-percent">0.0%</div>
+    <div id="heat-alert">OVERHEAT!</div>
   </div>
 
   <div id="unjam-widget">
@@ -215,6 +368,10 @@
   const cndText = document.getElementById("cnd-text");
   const tierText = document.getElementById("tier-text");
   const cndBar = document.getElementById("cnd-bar");
+  const heatWidget = document.getElementById("heat-widget");
+  const heatPercent = document.getElementById("heat-percent");
+  const heatAlert = document.getElementById("heat-alert");
+  const heatBar = document.getElementById("heat-bar");
   const trailBar = document.getElementById("trail-bar");
   const penaltyThresholdMarker = document.getElementById("penalty-threshold-marker");
   const unjamWidget = document.getElementById("unjam-widget");
@@ -222,8 +379,10 @@
   const ctx = unjamCanvas.getContext("2d");
 
   const REFERENCE_VIEWPORT = {
-    width: 1920,
-    height: 1080
+    // Scaleform uses a 1280x720 logical stage on this HUD. The game scales
+    // it to the physical display; PrismaUI must use the same reference.
+    width: 1280,
+    height: 720
   };
 
   const state = {
@@ -232,19 +391,30 @@
     textVisible: true,
     widgetVisible: false,
     unjamVisible: false,
-    widgetX: 1462,
-    widgetY: 1000,
-    widgetScale: 1.5,
+    cndColor: "#18ff00",
+    unjamColor: "#18ff00",
+    heatColor: "#f7f7ee",
+    widgetX: 974.6667,
+    widgetY: 666.6667,
+    widgetScale: 1,
     unjamOffsetX: 0,
     unjamOffsetY: 0,
     unjamScale: 1,
     unjamProgress: 0,
+    heat: 0,
+    overheated: false,
+    heatVisible: false,
+    heatX: 0,
+    heatY: 0,
+    heatScale: 1,
     color: "#18ff00"
   };
   let trailTimer = 0;
   let trailTargetPercent = 1;
   let widgetFadeTimer = 0;
   let widgetFadeTarget = false;
+  let heatHideTimer = 0;
+  const HEAT_HIDE_DEBOUNCE_MS = 150;
 
   function parsePayload(payload, fallback) {
     if (payload === undefined || payload === null || payload === "") return fallback;
@@ -267,7 +437,7 @@
 
   function colorToCss(value) {
     const n = Number(value);
-    if (!Number.isFinite(n)) return state.color;
+    if (!Number.isFinite(n)) return state.cndColor;
     let hex = (n & 0xffffff).toString(16);
     while (hex.length < 6) hex = "0" + hex;
     return "#" + hex;
@@ -289,8 +459,8 @@
     "--cnd-w": 56,
     "--cnd-font": 18,
     "--cnd-line": 20,
-    "--tier-x": 144,
-    "--tier-y": 4,
+    "--tier-x": 117,
+    "--tier-y": 8,
     "--marker-w": 8,
     "--notch-x": 1,
     "--notch-top-left": 3,
@@ -316,20 +486,6 @@
     return Number.isFinite(scale) && scale > 0 ? scale : 1;
   }
 
-  function anchoredCoordinate(referencePos, referenceSize, referenceViewportSize, viewportAxisSize, scale) {
-    const pos = Number(referencePos);
-    const size = Number(referenceSize);
-    if (!Number.isFinite(pos) || !Number.isFinite(size)) return 0;
-
-    const anchoredToFarEdge = pos + size / 2 >= referenceViewportSize / 2;
-    if (anchoredToFarEdge) {
-      const referenceFarMargin = referenceViewportSize - pos - size;
-      return viewportAxisSize - referenceFarMargin * scale - size * scale;
-    }
-
-    return pos * scale;
-  }
-
   function widgetUserScale() {
     return Number.isFinite(state.widgetScale) ? state.widgetScale : 1;
   }
@@ -345,10 +501,10 @@
     const viewport = viewportSize();
     const scale = resolutionScale();
     const baseScale = widgetUserScale();
-    const referenceWidth = layoutVars["--widget-w"] * baseScale;
-    const referenceHeight = layoutVars["--widget-h"] * baseScale;
-    const x = anchoredCoordinate(state.widgetX, referenceWidth, REFERENCE_VIEWPORT.width, viewport.width, scale);
-    const y = anchoredCoordinate(state.widgetY, referenceHeight, REFERENCE_VIEWPORT.height, viewport.height, scale);
+    // Match Scaleform: widgetX/widgetY are absolute coordinates in the
+    // 1920x1080 logical HUD stage, not edge-anchored CSS coordinates.
+    const x = Number(state.widgetX) * scale;
+    const y = Number(state.widgetY) * scale;
 
     widget.style.left = x + "px";
     widget.style.top = y + "px";
@@ -358,9 +514,22 @@
 
   function applyUnjamTransform() {
     const scale = resolutionScale();
+    // Match the standalone SWF: (0, 0) is the screen center and values are
+    // center-relative offsets.
     unjamWidget.style.left = "calc(50vw + " + (state.unjamOffsetX * scale) + "px)";
     unjamWidget.style.top = "calc(50vh + " + (state.unjamOffsetY * scale) + "px)";
     unjamWidget.style.transform = "scale(" + (state.unjamScale * scale) + ")";
+  }
+
+  function applyHeatTransform() {
+    const scale = resolutionScale();
+    // Heat uses the same center-relative anchor as unjam. Keep the logical
+    // widget center under the positioner point at every viewport scale.
+    heatWidget.style.left = "calc(50vw + " + (Number(state.heatX) * scale) + "px)";
+    heatWidget.style.top = "calc(50vh + " + (Number(state.heatY) * scale) + "px)";
+    heatWidget.style.marginLeft = (-84 * scale) + "px";
+    heatWidget.style.marginTop = (-19 * scale) + "px";
+    heatWidget.style.transform = "scale(" + (state.heatScale * scale) + ")";
   }
 
   function renderDurability(points) {
@@ -371,6 +540,37 @@
     tierText.style.display = isTier2 ? "block" : "none";
     penaltyThresholdMarker.style.display = isTier2 ? "none" : "block";
     cndText.textContent = "CND";
+    cndText.style.display = state.textVisible ? "block" : "none";
+  }
+
+  function renderHeat() {
+    const p = clamp(state.heat, 0, 1);
+    const visualOverheated = state.overheated && p >= 1.0;
+    const alert = visualOverheated;
+    heatBar.style.transform = "scaleX(" + p + ")";
+    heatPercent.textContent = (p * 100).toFixed(1) + "%";
+    heatPercent.style.display = alert ? "none" : "block";
+    heatAlert.style.display = alert ? "block" : "none";
+    heatWidget.classList.toggle("overheated", visualOverheated);
+    heatWidget.style.display = state.heatVisible ? "block" : "none";
+  }
+
+  function scheduleHeatVisibility(visible) {
+    if (heatHideTimer) {
+      clearTimeout(heatHideTimer);
+      heatHideTimer = 0;
+    }
+
+    if (visible) {
+      state.heatVisible = true;
+      return;
+    }
+
+    heatHideTimer = setTimeout(() => {
+      heatHideTimer = 0;
+      state.heatVisible = false;
+      renderHeat();
+    }, HEAT_HIDE_DEBOUNCE_MS);
   }
 
   function applyTrailPercent(percent) {
@@ -478,7 +678,7 @@
     ctx.clearRect(0, 0, 110, 110);
     ctx.save();
     ctx.translate(55, 55);
-    ctx.fillStyle = state.color;
+    ctx.fillStyle = state.unjamColor;
     ctx.globalAlpha = 0.85;
 
     const rot = -p * Math.PI;
@@ -511,7 +711,7 @@
 
     ctx.globalAlpha = 0.25;
     ctx.lineWidth = 4;
-    ctx.strokeStyle = state.color;
+    ctx.strokeStyle = state.unjamColor;
     ctx.beginPath();
     ctx.arc(0, 0, 25, 0, Math.PI * 2);
     ctx.stroke();
@@ -614,6 +814,22 @@
     }
   };
 
+  window.setHeat = (payload) => {
+    const data = parsePayload(payload, {});
+    state.heat = clamp(valueOr(data.heat, 0), 0, 1);
+    state.overheated = !!data.overheated;
+    scheduleHeatVisibility(!!data.visible);
+    renderHeat();
+  };
+
+  window.setHeatTransform = (payload) => {
+    const data = parsePayload(payload, {});
+    state.heatX = Number(valueOr(data.x, state.heatX));
+    state.heatY = Number(valueOr(data.y, state.heatY));
+    state.heatScale = Number(valueOr(data.scale, state.heatScale));
+    applyHeatTransform();
+  };
+
   window.setPenaltyThreshold = (payload) => {
     const data = parsePayload(payload, {});
     const pct = clamp(valueOr(data.percent, 0), 0, 1);
@@ -625,7 +841,7 @@
   window.setTextVisible = (payload) => {
     const data = parsePayload(payload, {});
     state.textVisible = !!data.visible;
-    cndText.style.display = "block";
+    cndText.style.display = state.textVisible ? "block" : "none";
   };
 
   window.setWidgetTransform = (payload) => {
@@ -638,9 +854,23 @@
 
   window.setCustomColor = (payload) => {
     const data = parsePayload(payload, {});
-    state.color = colorToCss(data.color);
-    root.style.setProperty("--hud-color", state.color);
+    state.cndColor = colorToCss(data.color);
+    root.style.setProperty("--hud-color", state.cndColor);
     drawUnjamGear(state.unjamProgress);
+    renderHeat();
+  };
+
+  window.setUnjamColor = (payload) => {
+    const data = parsePayload(payload, {});
+    state.unjamColor = colorToCss(data.color);
+    drawUnjamGear(state.unjamProgress);
+  };
+
+  window.setHeatColor = (payload) => {
+    const data = parsePayload(payload, {});
+    state.heatColor = colorToCss(data.color);
+    heatWidget.style.setProperty("--heat-color", state.heatColor);
+    renderHeat();
   };
 
   window.setUnjamTransform = (payload) => {
@@ -707,6 +937,9 @@
     void widget.offsetHeight;
 
     setTimeout(() => {
+      // Native state may have been pushed while the warmup paint was pending.
+      // Never let this delayed cleanup overwrite that newer visibility state.
+      if (state.widgetVisible !== wasVisible) return;
       if (wasVisible) {
         widget.classList.toggle("visible", true);
         widget.style.visibility = "visible";
@@ -723,22 +956,17 @@
 
   // -------------------------------------------------------------------
   // PrismaUI connection state.
-  // In Prisma 2.0 (CEF backend) the view lives as an iframe inside a
-  // shared CEF shell. The window.prisma bridge is injected by the shell
-  // and may not be available synchronously at script parse time, so we
-  // defer the standalone preview decision to avoid false activation.
-  //
-  // Lifecycle:
-  //   1. Page loads, deferredStandaloneTimeout starts (1500ms)
-  //   2. If C++ calls init() before timeout → connected, cancel standalone
-  //   3. If timeout expires without init() → standalone preview mode
+  // PrismaUI 2.0/2.1 hosts this page inside its shared browser shell. The
+  // native side calls init() after OnDomReady; no timed standalone preview
+  // is allowed because a slow framework startup could flash debug content
+  // into the in-game HUD.
   // -------------------------------------------------------------------
   let prismaConnected = false;
-  let deferredStandaloneTimer = null;
 
   window.addEventListener("resize", () => {
     applyWidgetTransform();
     applyUnjamTransform();
+    applyHeatTransform();
   });
 
   // -------------------------------------------------------------------
@@ -746,18 +974,12 @@
   // handler via InteropCall("init", ...). Signals that PrismaUI is
   // connected and the view is fully ready.
   //
-  // This also serves as a safety reset: if the standalone timeout fired
-  // during loading (before init() arrived), we force-hide everything
-  // so the C++ side takes full control.
+  // This also serves as a safety reset whenever the framework recreates or
+  // reuses the view, so the C++ side takes full control of visibility.
   // -------------------------------------------------------------------
   window.init = function() {
     prismaConnected = true;
-    if (deferredStandaloneTimer !== null) {
-      clearTimeout(deferredStandaloneTimer);
-      deferredStandaloneTimer = null;
-    }
-    // Safety: force-stop gear animation and hide both widgets
-    // (in case standalone preview activated during loading screen).
+    // Safety: force-stop gear animation and hide both widgets.
     stopUnjamAnimation();
     state.unjamVisible = false;
     unjamWidget.classList.remove("visible");
@@ -767,24 +989,10 @@
     widget.classList.remove("visible");
     widget.style.opacity = "0";
     widget.style.visibility = "hidden";
+    state.heatVisible = false;
+    renderHeat();
     console.log("[CSF] PrismaUI init() — connected, window.prisma available:", !!window.prisma);
   };
-
-  // -------------------------------------------------------------------
-  // Deferred standalone preview mode — activates after a grace period
-  // if no init() was called (meaning we're outside PrismaUI).
-  // -------------------------------------------------------------------
-  deferredStandaloneTimer = setTimeout(() => {
-    if (prismaConnected) return;
-
-    window.setCustomColor({ color: 0x18ff00 });
-    window.setDurability({ percent: 0.72, points: 720 });
-    window.setPenaltyThreshold({ percent: 0.75 });
-    window.setUnjamTransform({ x: 0, y: 0, scale: 1 });
-    window.setUnjamProgress({ percent: 0.35 });
-    prismaConnected = true;
-    console.log("[CSF] Standalone preview mode — debug panel enabled");
-  }, 1500);
 
   console.log("[CSF] Condition widget view ready");
 })();

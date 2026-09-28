@@ -16,7 +16,11 @@ namespace ConditionSystem
         if (!a_actor) return;
 
         ConditionSystem::g_isUnjamming.store(true);
-        RE::SendHUDMessage::ShowHUDMessage("$CSF_Unjamming", "WPNPistol10mmFireDry", true, true);
+        ConditionSystem::g_unjamProgress.store(0.0f);
+        const bool energyFault = ConditionSystem::IsCurrentWeaponEnergyFault();
+        RE::SendHUDMessage::ShowHUDMessage(
+            energyFault ? "$CSF_EnergyUnjamming" : "$CSF_Unjamming",
+            "WPNPistol10mmFireDry", true, true);
 
         // 使用 ActorHandle 替代裸指针，防止分离线程中 use-after-free
         auto actorHandle = a_actor->GetHandle();
@@ -46,6 +50,7 @@ namespace ConditionSystem
                 if (auto task = F4SE::GetTaskInterface()) {
                     task->AddTask([progress]() {
                         ConditionSystem::ConditionUI::UpdateUnjammingProgress(progress);
+                        ConditionSystem::g_unjamProgress.store(progress);
                         });
                 }
             }
@@ -57,10 +62,13 @@ namespace ConditionSystem
                     auto actor = ref ? ref->As<RE::Actor>() : nullptr;
                     if (actor) actor->DrawWeaponMagicHands(true);
                     ConditionSystem::ConditionUI::ShowUnjammingUI(false);
-                    ConditionSystem::g_isWeaponJammed.store(false);
-                    ConditionSystem::g_jammedWeaponUniqueID.store(0);
+                    const bool energyFault = ConditionSystem::IsCurrentWeaponEnergyFault();
+                    ConditionSystem::ClearCurrentWeaponFault();
                     ConditionSystem::g_isUnjamming.store(false);
-                    RE::SendHUDMessage::ShowHUDMessage("$CSF_UnjamSuccess", nullptr, true, true);
+                    ConditionSystem::g_unjamProgress.store(1.0f);
+                    RE::SendHUDMessage::ShowHUDMessage(
+                        energyFault ? "$CSF_EnergyUnjamSuccess" : "$CSF_UnjamSuccess",
+                        nullptr, true, true);
                     });
             }
             }).detach();

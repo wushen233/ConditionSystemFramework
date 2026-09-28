@@ -13,9 +13,9 @@ The current loader reads a `DamageFormula` object. These are the fields present 
   "DamageFormula": {
     "enabled": true,
     "baseHardness": 1.0,
-    "glanceThreshold": 0.3,
+    "glanceThreshold": 0.7,
     "glanceMultiplier": 0.1,
-    "scratchThreshold": 0.7,
+    "scratchThreshold": 0.3,
     "scratchMultiplier": 0.4,
     "durabilityDamageConstant": 0.15
   }
@@ -74,7 +74,7 @@ Armor OMODs, skill adjustments and `fArmorWearMultiplier` are applied afterwards
 | `scratchMultiplier` | Multiplier for the penetration phase |
 | `durabilityDamageConstant` | Global damage-to-durability constant |
 
-Thresholds are ratios, normally between `0.0` and `1.0`; do not write them as percentages such as `30` or `70`.
+Thresholds are ratios, normally between `0.0` and `1.0`; do not write them as percentages such as `30` or `70`. `scratchThreshold` must be lower than `glanceThreshold`; the loader clamps and normalizes invalid or reversed values to keep the normal-interception band reachable.
 
 ## `ratingMultipliers` Status
 
@@ -88,4 +88,3 @@ It remains in the example as a historical design trace, not as an active configu
 - `bEnableArmorCondition` is the MCM master switch for armor durability.
 - `bArmorConditionAffectsResistance` controls whether current armor condition affects game resistance.
 - `fArmorWearMultiplier` is the final total armor-wear multiplier.
-

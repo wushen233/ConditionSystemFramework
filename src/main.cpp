@@ -8,6 +8,8 @@
 #include "ProfileManager.h" 
 #include "Translation.h" 
 #include "DurabilityAPI.h" 
+#include "AnimationAPI.h"
+#include "OARIntegration.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
 
@@ -19,6 +21,10 @@
 void OnGameExit() { ConditionSystem::g_isGameRunning.store(false); }
 
 static bool g_hooksInstalled = false;
+// GameDataReady is the normal safe point for resolving FormID lists. Some
+// startup paths may omit it, so GameLoaded remains a fallback, but never
+// reload the same classification graph twice during one game process.
+static bool g_profilesLoadedAtGameDataReady = false;
 
 namespace {
     struct ItemUICardLayout
@@ -103,6 +109,7 @@ void OnF4SEMessage(F4SE::MessagingInterface::Message* a_msg) {
     REX::INFO("[CSF-BootDiag] Message begin: {} ({})", F4SEMessageName(a_msg->type), a_msg->type);
 
     if (a_msg->type == F4SE::MessagingInterface::kPostLoad) {
+        ConditionSystem::OARIntegration::TryRegister();
         REX::INFO("[CSF-BootDiag] IIF provider registration begin");
         static ItemUICardLayout layout = LoadItemUICardLayout();
         IIF_API::CPPCardRegistration reg;
@@ -122,9 +129,18 @@ void OnF4SEMessage(F4SE::MessagingInterface::Message* a_msg) {
         REX::INFO("[CSF-BootDiag] IIF provider registration end");
         REX::INFO("[IIF-Link] CND and combat interceptors registered safely at kPostLoad.");
     }
+    else if (a_msg->type == F4SE::MessagingInterface::kPostPostLoad) {
+        // Retry for load orders where OAR finishes loading after kPostLoad.
+        ConditionSystem::OARIntegration::TryRegister();
+    }
     else if (a_msg->type == F4SE::MessagingInterface::kGameLoaded) {
         REX::INFO("[CSF-BootDiag] GameLoaded setup begin");
-        ConditionSystem::LoadAllProfiles();
+        if (!g_profilesLoadedAtGameDataReady) {
+            REX::INFO("[CSF-BootDiag] GameDataReady was not observed; loading profiles at GameLoaded fallback");
+            ConditionSystem::LoadAllProfiles();
+        } else {
+            REX::INFO("[CSF-BootDiag] Profiles already loaded at GameDataReady; skipping duplicate GameLoaded load");
+        }
         REX::INFO("[CSF-BootDiag] InstallSingletons begin");
         ConditionSystem::Hooks::InstallSingletons();
         REX::INFO("[CSF-BootDiag] GameLoaded setup end");
@@ -145,9 +161,46 @@ void OnF4SEMessage(F4SE::MessagingInterface::Message* a_msg) {
             REX::INFO("[DurabilityAPI] Provided Durability interface to requester (v{})", s_apiInterface.version);
         }
     }
+    else if (a_msg->type == ConditionSystem::AnimationAPI::kMessage_RequestInterface) {
+        static ConditionSystem::AnimationAPI::Interface s_animationInterface = {
+            ConditionSystem::AnimationAPI::kVersion,
+            []() -> ConditionSystem::AnimationAPI::State {
+                ConditionSystem::AnimationAPI::State state;
+                const auto fault = ConditionSystem::GetWeaponFaultSnapshot();
+                state.weaponJammed = fault.IsWeaponJammed();
+                state.unjamming = ConditionSystem::g_isUnjamming.load();
+                state.weaponDrawn = ConditionSystem::g_isWeaponDrawn.load();
+                state.realWeaponEquipped = ConditionSystem::IsRealWeaponEquipped();
+                state.energyFault = fault.IsEnergyFault();
+                state.overheated = fault.IsOverheated();
+                state.weaponHeat = fault.weaponHeat;
+                state.weaponDurability = ConditionSystem::GetEquippedWeaponDurabilityPercent();
+                state.unjamProgress = ConditionSystem::g_unjamProgress.load();
+                return state;
+            }
+        };
+        if (auto msg = F4SE::GetMessagingInterface()) {
+            msg->Dispatch(
+                ConditionSystem::AnimationAPI::kMessage_ProvideInterface,
+                &s_animationInterface,
+                sizeof(s_animationInterface),
+                "ConditionSystemFramework");
+            REX::INFO("[AnimationAPI] Provided CSF animation state interface (v{})", s_animationInterface.version);
+        }
+    }
     else if (a_msg->type == F4SE::MessagingInterface::kGameDataReady) {
+        // DataHandler and loaded plugins are available here.  Classification
+        // rules resolve their FormID Lists at load time, so do not defer this
+        // to kGameLoaded: that notification is not delivered on every startup
+        // path.
+        REX::INFO("[CSF-BootDiag] Profile load at GameDataReady begin");
+        ConditionSystem::LoadAllProfiles();
+        g_profilesLoadedAtGameDataReady = true;
+        REX::INFO("[CSF-BootDiag] Profile load at GameDataReady end");
         REX::INFO("[CSF-BootDiag] Prisma init begin");
-        ConditionSystem::ConditionUI::InitializePrisma();
+        if (ConditionSystem::g_mcmSettings.usePrismaUI.load()) {
+            ConditionSystem::ConditionUI::InitializePrisma();
+        }
         REX::INFO("[CSF-BootDiag] Prisma init end");
     }
     else if (a_msg->type == F4SE::MessagingInterface::kPostLoadGame || a_msg->type == F4SE::MessagingInterface::kNewGame) {
@@ -160,7 +213,9 @@ void OnF4SEMessage(F4SE::MessagingInterface::Message* a_msg) {
             REX::INFO("[CSF-BootDiag] RegisterMenu begin");
             ConditionSystem::ConditionUI::RegisterMenu();
             REX::INFO("[CSF-BootDiag] CreatePrismaView initial begin");
-            ConditionSystem::ConditionUI::CreatePrismaView();
+            if (ConditionSystem::g_mcmSettings.usePrismaUI.load()) {
+                ConditionSystem::ConditionUI::CreatePrismaView();
+            }
             REX::INFO("[CSF-BootDiag] MenuOpenClose sink begin");
             ConditionSystem::SettingsManager::GetSingleton()->InstallHook();
             REX::INFO("[CSF-BootDiag] Settings load begin");
@@ -170,7 +225,9 @@ void OnF4SEMessage(F4SE::MessagingInterface::Message* a_msg) {
             g_hooksInstalled = true;
         }
         REX::INFO("[CSF-BootDiag] CreatePrismaView refresh begin");
-        ConditionSystem::ConditionUI::CreatePrismaView();
+        if (ConditionSystem::g_mcmSettings.usePrismaUI.load()) {
+            ConditionSystem::ConditionUI::CreatePrismaView();
+        }
         REX::INFO("[CSF-BootDiag] OpenMenu begin");
         ConditionSystem::ConditionUI::OpenMenu();
 
@@ -178,6 +235,7 @@ void OnF4SEMessage(F4SE::MessagingInterface::Message* a_msg) {
             task->AddTask([]() {
                 REX::INFO("[CSF-BootDiag] SyncAfterGameLoad task begin");
                 ConditionSystem::SyncAfterGameLoad();
+                ConditionSystem::QueuePlayerArmorRatingRefresh(true);
                 REX::INFO("[CSF-BootDiag] SyncAfterGameLoad task end");
             });
         }
@@ -223,6 +281,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
         auto serialization = F4SE::GetSerializationInterface();
         if (serialization) {
             serialization->SetUniqueID('CNDS');
+            serialization->SetRevertCallback(ConditionSystem::OnRevert);
             serialization->SetSaveCallback(ConditionSystem::OnSave);
             serialization->SetLoadCallback(ConditionSystem::OnLoad);
         }

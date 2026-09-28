@@ -1,0 +1,37 @@
+{
+  /*
+   * 原版普通护甲排除 Provider。
+   * Ignore FLST 允许 KYWD、ARMO 和嵌套 FLST。
+   */
+  "schemaVersion": 3,
+  "module": "armorClassifications",
+  "domain": "armor",
+  "provider": "CSF Vanilla Armor Exclusions",
+  "requires": [
+    "Condition System Framework.esp"
+  ],
+  "ProviderPriority": 0,
+  "groups": {
+    "Armor.Flag": {
+      "mode": "coexisting"
+    }
+  },
+  "resolution": {
+    "contextPriorities": {
+      "base": 100,
+      "instance": 200
+    }
+  },
+  "modRoles": {},
+  "classifications": {
+    "Armor.Flag.Ignore": [
+      {
+        "list": "Condition System Framework.esp|0x000F66",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ]
+  }
+}

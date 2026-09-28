@@ -1,0 +1,383 @@
+{
+  /*
+   * CSF 原版武器三层分类 Provider。
+   *
+   * 第一层 Weapon.Family：技术家族，可以同时命中多个。
+   * 例如镭步枪可以同时属于 ballistic 和 gamma。
+   *
+   * 第二层 Weapon.Handling：主体形态，最终只选择一个。
+   * 例如 pistol、rifle、heavy、melee1h。
+   *
+   * 第三层 Weapon.Configuration：附加配置，可以没有结果。
+   * 当前只区分 shotgun 和 sniper，并且二者互斥。
+   *
+   * JSON 只注册 FLST，具体 KYWD/OMOD 全部保存在 ESP 的 FLST 中。
+   * 一个 FLST 内所有叶节点共享该注册项的 priority。
+   * 需要不同优先级时应拆成多个 FLST，不使用 FLST 成员顺序。
+   * 实例分类只检查当前实际安装的 OMOD。
+   */
+  "schemaVersion": 3,
+  "module": "weaponClassifications",
+  "domain": "weapon",
+  "provider": "CSF Vanilla Weapon Classification",
+  "requires": [
+    "Condition System Framework.esp"
+  ],
+  // ProviderPriority 只在多个已加载 Provider 产生冲突时参与排序。
+  "ProviderPriority": 0,
+  "defaults": {
+    // 分类 ID 区分大小写；外部 Provider 必须使用完全相同的概念名称。
+    "idMatching": "caseSensitive",
+    // 同一个 FLST 内的所有 KYWD/OMOD 共享该 FLST 注册项的 listPriority。
+    "memberPriorityPolicy": "uniformPerSourceList"
+  },
+  "groups": {
+    // 技术家族允许共存，不执行互斥淘汰。
+    "Weapon.Family": {
+      "mode": "coexisting"
+    },
+    // 主体形态最终最多选择一个；同强度冲突返回 Unknown。
+    "Weapon.Handling": {
+      "mode": "exclusive",
+      "unresolvedTie": "unknown"
+    },
+    // 附加配置可以为空，但 shotgun/sniper 不能同时成为最终结果。
+    "Weapon.Configuration": {
+      "mode": "optionalExclusive",
+      "unresolvedTie": "unknown"
+    }
+  },
+  "instanceSemantics": {
+    // instance 只包含最终实例相对基础 WEAP 新增且仍然有效的关键字。
+    "keywordMode": "effectiveAddedOnly",
+    // 只检查当前物品实例实际安装的 OMOD，不扫描全部可安装改装。
+    "omodMode": "installedOnly"
+  },
+  "resolution": {
+    // 当前实例实际安装的 OMOD 结果高于基础 WEAP 自身关键字。
+    "contextPriorities": {
+      "base": 100,
+      "instance": 200
+    },
+    // 候选强度从上到下逐项比较，前一项相同时才比较后一项。
+    "sourceOrder": [
+      "providerOrder",
+      "contextPriority",
+      "modRolePriority",
+      "listPriority"
+    ],
+    // 同一分类被多个来源命中时，只保留最强来源用于结果和诊断。
+    "sameCategoryAggregation": "highestStrength",
+    // ruleId 只稳定去重同概念来源；不同互斥概念同强度仍返回 Unknown。
+    "deterministicTieBreak": "ruleId",
+    "differentCategoriesAtEqualStrength": "groupPolicy"
+  },
+  "modRoles": {
+    // 每个角色注册 Attach Point FLST；社区 AP 可由外部 Provider 追加。
+    // priorities 是该角色在三层分类中的权重。
+    "Grip": [
+      {
+        // 枪托/握把最有权决定主体形态。
+        "list": "Condition System Framework.esp|0x000F8B",
+        "priorities": {
+          "Weapon.Family": 300,
+          "Weapon.Handling": 700,
+          "Weapon.Configuration": 100
+        }
+      }
+    ],
+    "Barrel": [
+      {
+        // 枪管最有权决定 shotgun/sniper 配置。
+        "list": "Condition System Framework.esp|0x000F8C",
+        "priorities": {
+          "Weapon.Family": 300,
+          "Weapon.Handling": 300,
+          "Weapon.Configuration": 700
+        }
+      }
+    ],
+    "Receiver": [
+      {
+        // 机匣最有权改变技术家族。
+        "list": "Condition System Framework.esp|0x000F8D",
+        "priorities": {
+          "Weapon.Family": 600,
+          "Weapon.Handling": 400,
+          "Weapon.Configuration": 500
+        }
+      }
+    ],
+    "Magazine": [
+      {
+        // 弹匣可能改变弹药技术或霰弹配置，例如钢矛弹匣。
+        "list": "Condition System Framework.esp|0x000F8E",
+        "priorities": {
+          "Weapon.Family": 500,
+          "Weapon.Handling": 200,
+          "Weapon.Configuration": 600
+        }
+      }
+    ],
+    "Internal": [
+      {
+        // 内部改装可能改变技术家族，低于明确机匣。
+        "list": "Condition System Framework.esp|0x000F8F",
+        "priorities": {
+          "Weapon.Family": 500,
+          "Weapon.Handling": 300,
+          "Weapon.Configuration": 400
+        }
+      }
+    ],
+    "Muzzle": [
+      {
+        // 枪口通常不决定核心分类，只保留较低扩展优先级。
+        "list": "Condition System Framework.esp|0x000F90",
+        "priorities": {
+          "Weapon.Family": 200,
+          "Weapon.Handling": 200,
+          "Weapon.Configuration": 300
+        }
+      }
+    ],
+    "Scope": [
+      {
+        // 瞄具默认不用于推断 sniper。
+        "list": "Condition System Framework.esp|0x000F91",
+        "priorities": {
+          "Weapon.Family": 100,
+          "Weapon.Handling": 100,
+          "Weapon.Configuration": 200
+        }
+      }
+    ],
+    // 未注册的社区 Attach Point 仍可贡献明确分类信号，但权重最低。
+    "unknownModRole": {
+      "allowClassification": true,
+      "priorities": {
+        "Weapon.Family": 0,
+        "Weapon.Handling": 0,
+        "Weapon.Configuration": 0
+      }
+    }
+  },
+  "classifications": {
+    // 键是最终分类 ID，值是 FLST 来源数组。
+    // 每个数组项的 listPriority 作用于整个 FLST，而不是单个成员。
+    "Weapon.Family.Ballistic": [
+      {
+        // 实弹技术；既可来自 WEAP，也可来自当前安装 OMOD。
+        "list": "Condition System Framework.esp|0x000F7B",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Energy": [
+      {
+        // 激光、等离子、火焰、冷冻等能量技术。
+        "list": "Condition System Framework.esp|0x000F7C",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Launcher": [
+      {
+        // 核弹、导弹、舰炮、垃圾喷射炮和榴弹发射器。
+        "list": "Condition System Framework.esp|0x000F7D",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Melee": [
+      {
+        // 普通近战技术。
+        "list": "Condition System Framework.esp|0x000F7E",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Unarmed": [
+      {
+        // 拳套、动力拳等徒手装备。
+        "list": "Condition System Framework.esp|0x000F7F",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Electromagnetic": [
+      {
+        // 电磁技术，当前主要是高斯武器。
+        "list": "Condition System Framework.esp|0x000F83",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Gamma": [
+      {
+        // 伽马技术；镭步枪可同时命中 ballistic 与 gamma。
+        "list": "Condition System Framework.esp|0x000F84",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Family.Alien": [
+      {
+        // 外星武器技术。
+        "list": "Condition System Framework.esp|0x000F85",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Handling.Pistol": [
+      {
+        // 最高层：当前实例 OMOD 添加的手枪握把信号。
+        "list": "Condition System Framework.esp|0x000F86",
+        "contexts": [
+          "instance"
+        ],
+        "listPriority": 400
+      },
+      {
+        // 中间层：基础 WEAP 的标准 WeaponTypePistol。
+        "list": "Condition System Framework.esp|0x000F76",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      },
+      {
+        // 最低层：缺少标准类型关键字的特殊原版手枪兜底。
+        "list": "Condition System Framework.esp|0x000F88",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Handling.Rifle": [
+      {
+        // 最高层：当前实例 OMOD 添加的步枪枪托信号。
+        "list": "Condition System Framework.esp|0x000F87",
+        "contexts": [
+          "instance"
+        ],
+        "listPriority": 400
+      },
+      {
+        // 中间层：基础 WEAP 的标准 WeaponTypeRifle。
+        "list": "Condition System Framework.esp|0x000F77",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 200
+      },
+      {
+        // 最低层：缺少标准类型关键字的特殊原版步枪兜底。
+        "list": "Condition System Framework.esp|0x000F89",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Handling.Heavy": [
+      {
+        // 基础或实例中的明确 WeaponTypeHeavyGun。
+        "list": "Condition System Framework.esp|0x000F7A",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      },
+      {
+        // 缺少可靠标准标签的固定重武器兜底。
+        "list": "Condition System Framework.esp|0x000F8A",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Weapon.Handling.Melee1H": [
+      {
+        // 单手近战主体形态。
+        "list": "Condition System Framework.esp|0x000F80",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Weapon.Handling.Melee2H": [
+      {
+        // 双手近战主体形态。
+        "list": "Condition System Framework.esp|0x000F81",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Weapon.Handling.Unarmed": [
+      {
+        // 徒手装备主体形态。
+        "list": "Condition System Framework.esp|0x000F82",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Weapon.Configuration.Shotgun": [
+      {
+        // 可由基础 WEAP 或当前实例的枪管、机匣、弹匣产生。
+        "list": "Condition System Framework.esp|0x000F78",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ],
+    "Weapon.Configuration.Sniper": [
+      {
+        // 只依赖明确配置，不根据瞄准镜或枪管长度猜测。
+        "list": "Condition System Framework.esp|0x000F79",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 200
+      }
+    ]
+  }
+}

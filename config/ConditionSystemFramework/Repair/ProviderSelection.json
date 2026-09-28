@@ -1,0 +1,28 @@
+{
+  /*
+   * Repair 模块的 Provider 选择策略。
+   *
+   * JsonPriorityFirst：
+   *   1. Provider JSON 的 ProviderPriority
+   *   2. RequiredPlugin 的插件加载顺序
+   *   3. Provider JSON 文件名
+   *
+   * PluginLoadOrderFirst：
+   *   1. RequiredPlugin 的插件加载顺序
+   *   2. Provider JSON 的 ProviderPriority
+   *   3. Provider JSON 文件名
+   *
+   * 文件名只用于最终确定性决胜，不用于表达用户优先级。
+   * 模组整合作者可以覆盖此文件改变整个 Repair 模块的选择方式。
+   */
+  "schemaVersion": 1,
+  "module": "Repair.ProviderSelection",
+  "modules": {
+    "JuryRigging": {
+      "mode": "JsonPriorityFirst"
+    },
+    "OverRepair": {
+      "mode": "PluginLoadOrderFirst"
+    }
+  }
+}

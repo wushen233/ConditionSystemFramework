@@ -8,6 +8,7 @@
 
 namespace RE { 
     class TESBoundObject; 
+    class BGSInventoryItem;
 }
 
 namespace ConditionSystem::Workbench
@@ -15,6 +16,13 @@ namespace ConditionSystem::Workbench
     // 用于接收从 ItemCard 传来的高亮物品实体
     extern std::atomic<RE::TESBoundObject*> g_hoveredObject;
     extern std::atomic<void*> g_hoveredStack; 
+    extern std::atomic_bool g_isRobotWorkbench;
+
+    void SetExamineMenuOpen(bool a_open);
+    bool IsExamineMenuOpen();
+
+    void SetRobotWorkbenchContext(bool a_isRobotWorkbench);
+    bool IsRobotWorkbenchContext();
 
     struct RepairMaterial {
         RE::TESBoundObject* componentForm; 
@@ -25,6 +33,7 @@ namespace ConditionSystem::Workbench
     void InitializeRecipeCache();
     void ResetRecipeCache();  // 清空配方缓存，供读档时重新构建
     void ClearRuntimeSelection();
+    void NotifyInventoryItemChanged(RE::BGSInventoryItem* a_item);
     
     // 💡 核心修复：声明我们新写的两个服务端通信接口
     void SendRepairCostToUI(); 

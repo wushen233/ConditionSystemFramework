@@ -1,0 +1,113 @@
+{
+  /*
+   * ArmorKeywords 桥接 Provider。
+   * 只追加普通衣物/护甲的 Material 与 Region 信号。
+   * 动力装甲仍由 CSF 原版 Equipment.Domain.PowerArmor 分流。
+   */
+  "schemaVersion": 3,
+  "module": "armorClassifications",
+  "domain": "armor",
+  "provider": "CSF ArmorKeywords Bridge",
+  "requires": [
+    "ArmorKeywords.esm",
+    "CSF - ArmorKeywords Bridge.esp"
+  ],
+  "ProviderPriority": 100,
+  "groups": {
+    "Armor.Material": {
+      "mode": "exclusive",
+      "unresolvedTie": "unknown"
+    },
+    "Armor.Region": {
+      "mode": "exclusive",
+      "unresolvedTie": "unknown"
+    }
+  },
+  "resolution": {
+    "contextPriorities": {
+      "base": 100,
+      "instance": 200
+    }
+  },
+  "modRoles": {},
+  "classifications": {
+    /*
+     * 明确的 dn_HasMaterial_* 材质信号使用 300 优先级。
+     * _ArmorClass* 只表示护甲系列，作为 100 优先级兜底。
+     * _ClothesType* 仅用于 Region，不再参与 Material。
+     */
+    "Armor.Material.Textile": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000001",
+        "contexts": ["base"],
+        "listPriority": 300
+      }
+    ],
+    "Armor.Material.Flexible": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000002",
+        "contexts": ["base"],
+        "listPriority": 300
+      },
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x00000C",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Material.Rigid": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000003",
+        "contexts": ["base"],
+        "listPriority": 300
+      },
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x00000D",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Material.Scrap": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000004",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Region.Torso": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000006",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Region.Limbs": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000007",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Region.Head": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000008",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Region.Face": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x000009",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Region.Accessory": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x00000A",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ]
+  }
+}

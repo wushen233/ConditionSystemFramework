@@ -249,33 +249,37 @@ namespace ConditionSystem
 
                 if (payloadStr != "2" && !isBashing) {
                     DeductEquippedWeaponDurability(player, false);
+                    ProcessWeaponHeat(player);
                 }
             }
             else {
                 // Phase 1 下开火只扣耐久，不卡壳
                 DeductEquippedWeaponDurability(player, false);
+                ProcessWeaponHeat(player);
             }
         }
 
         // 3. 处理换弹完成 (ReloadComplete) - 仅限 Phase 1
         else if (a_event.tag == tag_reloadComplete || a_event.tag == tag_weaponReloadComplete) {
             RefreshWeaponFireBaseline(RE::PlayerCharacter::GetSingleton());
-            if (g_isWeaponJammed.load()) {
-                g_isWeaponJammed.store(false);
-                g_jammedWeaponUniqueID.store(0);
+            if (IsCurrentWeaponJammed()) {
+                ClearCurrentWeaponFault();
                 RE::SendHUDMessage::ShowHUDMessage("$CSF_UnjamSuccessAlt", nullptr, true, true);
             }
             else if (ConditionSystem::g_mcmSettings.iJammingPhase.load() == 1) {
                 float condition = GetEquippedWeaponDurabilityPercent();
-                if (RollForJam(condition)) {
-                    g_isWeaponJammed.store(true);
-
-                    if (g_mcmSettings.quickUnjam.load()) {
-                        RE::SendHUDMessage::ShowHUDMessage("$CSF_ReloadJamFailed", "UIActionDeny", true, true);
+                const WeaponMechanism mechanism = GetEquippedWeaponMechanism();
+                if (RollForJam(condition, mechanism)) {
+                    if (mechanism == WeaponMechanism::EnergyFault) {
+                        StartEnergyFault();
                     }
                     else {
-                        auto player = RE::PlayerCharacter::GetSingleton();
-                        if (player) TriggerFullUnjam(static_cast<RE::Actor*>(player));
+                        if (StartBallisticJam() && g_mcmSettings.quickUnjam.load()) {
+                            RE::SendHUDMessage::ShowHUDMessage("$CSF_ReloadJamFailed", "UIActionDeny", true, true);
+                        } else if (IsCurrentWeaponJammed()) {
+                            auto player = RE::PlayerCharacter::GetSingleton();
+                            if (player) TriggerFullUnjam(static_cast<RE::Actor*>(player));
+                        }
                     }
                 }
             }
@@ -426,29 +430,31 @@ namespace ConditionSystem
                     attackTypeStr = "附加特效/未知物理判定";
                 }
 
-                if (throttleLimitMs > 0) {
+                static std::chrono::steady_clock::time_point s_lastCleanupTime{};
+                {
                     std::lock_guard<std::mutex> lock(s_throttleMutex);
-                    if (s_hitThrottleMap.find(attackerID) != s_hitThrottleMap.end()) {
-                        auto timeSinceLastHit = std::chrono::duration_cast<std::chrono::milliseconds>(now - s_hitThrottleMap[attackerID]).count();
-                        if (timeSinceLastHit < throttleLimitMs) {
-                            return RE::BSEventNotifyControl::kContinue;
+                    if (throttleLimitMs > 0) {
+                        if (const auto it = s_hitThrottleMap.find(attackerID); it != s_hitThrottleMap.end()) {
+                            const auto timeSinceLastHit = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
+                            if (timeSinceLastHit < throttleLimitMs) {
+                                return RE::BSEventNotifyControl::kContinue;
+                            }
                         }
+                        s_hitThrottleMap[attackerID] = now;
                     }
-                    s_hitThrottleMap[attackerID] = now;
-                }
 
-                static auto s_lastCleanupTime = now;
-                if (std::chrono::duration_cast<std::chrono::seconds>(now - s_lastCleanupTime).count() > 60) {
-                    std::lock_guard<std::mutex> lock(s_throttleMutex);
-                    for (auto it = s_hitThrottleMap.begin(); it != s_hitThrottleMap.end();) {
-                        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count() > 10000) {
-                            it = s_hitThrottleMap.erase(it);
+                    if (s_lastCleanupTime == std::chrono::steady_clock::time_point{} ||
+                        std::chrono::duration_cast<std::chrono::seconds>(now - s_lastCleanupTime).count() > 60) {
+                        for (auto it = s_hitThrottleMap.begin(); it != s_hitThrottleMap.end();) {
+                            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count() > 10000) {
+                                it = s_hitThrottleMap.erase(it);
+                            }
+                            else {
+                                ++it;
+                            }
                         }
-                        else {
-                            ++it;
-                        }
+                        s_lastCleanupTime = now;
                     }
-                    s_lastCleanupTime = now;
                 }
 
                 if (g_mcmSettings.enableLogging.load()) {
@@ -456,44 +462,6 @@ namespace ConditionSystem
                 }
                 DeductEquippedArmorDurability(player, a_event);
             }
-
-            return RE::BSEventNotifyControl::kContinue;
-        }
-    };
-
-    // =========================================================================
-    // MagicEffectApplyEventHandler: 魔法/环境侵蚀事件
-    // =========================================================================
-
-    class MagicEffectApplyEventHandler : public RE::BSTEventSink<RE::TESMagicEffectApplyEvent>
-    {
-    public:
-        static MagicEffectApplyEventHandler* GetSingleton() {
-            static MagicEffectApplyEventHandler singleton;
-            return &singleton;
-        }
-
-        virtual RE::BSEventNotifyControl ProcessEvent(const RE::TESMagicEffectApplyEvent& a_event, RE::BSTEventSource<RE::TESMagicEffectApplyEvent>*) override {
-            auto player = RE::PlayerCharacter::GetSingleton();
-            if (!player) return RE::BSEventNotifyControl::kContinue;
-
-            RE::TESObjectREFR* target = GetRawPtr(a_event.target);
-            if (target != player) return RE::BSEventNotifyControl::kContinue;
-
-            RE::TESObjectREFR* caster = GetRawPtr(a_event.caster);
-
-            if (caster == player) {
-                return RE::BSEventNotifyControl::kContinue;
-            }
-
-            bool isEnvironmental = (!caster || !caster->Is(RE::ENUM_FORM_ID::kACHR));
-
-            if (g_mcmSettings.enableLogging.load()) {
-                std::string sourceStr = isEnvironmental ? "环境陷阱/辐射源/地雷机关" : "敌人魔法/附魔/毒气";
-                REX::INFO("[魔法事件] 遭到 [{}] 的能量侵蚀，开始交由元素/环境磨损模块结算...", sourceStr);
-            }
-
-            DeductEquippedArmorDurabilityFromMagic(player, a_event);
 
             return RE::BSEventNotifyControl::kContinue;
         }
@@ -650,12 +618,6 @@ namespace ConditionSystem
         if (hitEventSource) {
             hitEventSource->RegisterSink(HitEventHandler::GetSingleton());
             if (g_mcmSettings.enableLogging.load()) REX::INFO("[ConditionSystem] 物理击中 (TESHitEvent) 监听器原生注册成功！");
-        }
-
-        auto magicEventSource = RE::TESMagicEffectApplyEvent::GetEventSource();
-        if (magicEventSource) {
-            magicEventSource->RegisterSink(MagicEffectApplyEventHandler::GetSingleton());
-            if (g_mcmSettings.enableLogging.load()) REX::INFO("[ConditionSystem] 魔法/环境侵蚀 (TESMagicEffectApplyEvent) 监听器原生注册成功！");
         }
 
         auto loadedEventSource = GetLoadedEventSourceFix();

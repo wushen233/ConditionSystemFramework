@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 3,
+  "module": "armorClassifications",
+  "domain": "armor",
+  "provider": "Example Armor CSF Support",
+  "requires": [
+    "ExampleArmor.esp"
+  ],
+  "ProviderPriority": 100,
+  "modRoles": {
+    "Size": {
+      "lists": [
+        "ExampleArmor.esp|0x000A10"
+      ],
+      "priorities": {
+        "Armor.Grade": 700
+      }
+    }
+  },
+  "classifications": {
+    "Armor.Material.Flexible": [
+      {
+        "list": "ExampleArmor.esp|0x000A01",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Region.Head": [
+      {
+        "list": "ExampleArmor.esp|0x000A02",
+        "contexts": [
+          "base"
+        ],
+        "listPriority": 100
+      }
+    ],
+    "Armor.Grade.C": [
+      {
+        "list": "ExampleArmor.esp|0x000A03",
+        "contexts": [
+          "base",
+          "instance"
+        ],
+        "listPriority": 100
+      }
+    ]
+  }
+}

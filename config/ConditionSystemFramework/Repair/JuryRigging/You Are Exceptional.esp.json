@@ -1,0 +1,314 @@
+{
+  /*
+   * You Are Exceptional 技能 Provider。
+   * Gunsmithery 负责 Ballistic/Launcher，Science 负责高级技术，
+   * Weaponry 负责 Melee/Unarmed。混合技术武器可使用任意满足的路线。
+   */
+  "RequiredPlugin": "You Are Exceptional.esp",
+  "schemaVersion": 3,
+  "module": "Repair.JuryRigging",
+  "ProviderPriority": 100,
+  "JuryRiggingRules": [
+    {
+      "RuleName": "Exact Base Weapon With Same Handling",
+      "Priority": 300,
+      "MaterialConditionMultiplier": 1.0,
+      "AppliesTo": {
+        "target": { "all": ["weapon"], "none": ["Weapon.Flag.Ignore"] },
+        "material": { "all": ["weapon"], "none": ["Weapon.Flag.Ignore"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameBase" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Exact Base Armor",
+      "Priority": 300,
+      "MaterialConditionMultiplier": 1.0,
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": { "all": [{ "type": "sameBase" }] }
+    },
+    {
+      "RuleName": "Armor: Same Material, Region and Grade (Tinkering 20)",
+      "Priority": 250,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x07AE50",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameGroup", "group": "Armor.Region" },
+          { "type": "sameGroup", "group": "Armor.Material" },
+          { "type": "sameOptionalGroup", "group": "Armor.Grade" }
+        ]
+      }
+    },
+    {
+      // 实弹和发射器技术路线。
+      "RuleName": "Ballistic/Launcher: Same Handling (Gunsmithery 20)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000008",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] },
+        "material": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      },
+      "EfficiencyModifiers": [
+        {
+          "type": "optionalGroupMultiplier",
+          "group": "Weapon.Configuration",
+          "same": 1.0,
+          "different": 0.8,
+          "oneMissing": 0.9
+        }
+      ]
+    },
+    {
+      "RuleName": "Ballistic/Launcher: Cross Handling (Gunsmithery 80)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000008",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 80.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] },
+        "material": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      // 能量、电磁、伽马和外星技术路线。
+      "RuleName": "Advanced Technology: Same Handling (Science 20)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000011",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      },
+      "EfficiencyModifiers": [
+        {
+          "type": "optionalGroupMultiplier",
+          "group": "Weapon.Configuration",
+          "same": 1.0,
+          "different": 0.8,
+          "oneMissing": 0.9
+        }
+      ]
+    },
+    {
+      "RuleName": "Advanced Technology: Cross Handling (Science 80)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000011",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 80.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      "RuleName": "Melee: Same Handling (Weaponry 20)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000015",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Melee"] },
+        "material": { "all": ["Weapon.Family.Melee"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Melee: Cross Handling (Weaponry 80)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000015",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 80.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Melee"] },
+        "material": { "all": ["Weapon.Family.Melee"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      "RuleName": "Unarmed: Same Handling (Weaponry 20)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x000015",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Unarmed"] },
+        "material": { "all": ["Weapon.Family.Unarmed"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Armor: Same Material and Region (Tinkering 20)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x07AE50",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameGroup", "group": "Armor.Region" },
+          { "type": "sameGroup", "group": "Armor.Material" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Clothing: Same Repair Region (Tinkering 20)",
+      "Priority": 190,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x07AE50",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 20.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor", "Armor.Material.Textile"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor", "Armor.Material.Textile"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Armor.Region" }]
+      }
+    },
+    {
+      "RuleName": "Armor: Universal Same Region (Tinkering 80)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": {
+        "Type": "AV",
+        "Plugin": "You Are Exceptional.esp",
+        "FormID": "0x07AE50",
+        "ScaleFactor": 100.0
+      },
+      "SkillThresholds": [{ "threshold": 80.0, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Armor.Region" }]
+      }
+    }
+  ]
+}

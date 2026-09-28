@@ -1,0 +1,27 @@
+{
+  // CNVSS already supplies the +3% critical-hit entry point. CSF supplies
+  // the original Built to Destroy weapon-wear side effect.
+  "modifiers": [
+    {
+      "name": "BuiltToDestroy",
+      "Domain": "Weapon",
+      "priority": 100,
+      "RequiredSkill": {
+        "Type": "Perk",
+        "Plugin": "Classic Skill System.esp",
+        "FormID": "0xD166",
+        "MinRank": 1
+      },
+      "SkillThresholds": [
+        {
+          "threshold": 1.0,
+          "wearMultiplier": 1.15,
+          "wearRateFlat": 0.0
+        }
+      ],
+      "AppliesTo": {
+        "all": [ "weapon" ]
+      }
+    }
+  ]
+}

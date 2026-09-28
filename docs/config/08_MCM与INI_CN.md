@@ -35,8 +35,8 @@ MO2 的 `overwrite` 或用户专用配置优先于项目默认模板。MCM 保�
 | `iHeatWidgetType` | 过热小部件后端 |
 | `bShowItemCardCND` | 物品卡片显示 CND |
 | `iItemCardCNDPosition` | 物品卡片 CND 位置 |
-| `fUnjamX/Y/Scale` | 卡壳小部件位置和缩放 |
-| `fHeatWidgetX/Y/Scale` | 过热小部件位置和缩放 |
+| `fUnjamX/Y/Scale` | 卡壳小部件相对屏幕中心的位置和缩放；`0, 0` 为屏幕中心 |
+| `fHeatWidgetX/Y/Scale` | 过热小部件相对屏幕中心的位置和缩放；`0, 0` 为屏幕中心 |
 | `fJuryStatsOffsetX/Y` | Jury Rigging 右侧统计偏移 |
 | `fJuryStatsRowSpacing` | Jury Rigging 统计行距 |
 | `iJuryStatsColorMode` | Jury 统计颜色模式 |
@@ -46,7 +46,7 @@ MO2 的 `overwrite` 或用户专用配置优先于项目默认模板。MCM 保�
 | `bUseCustomColor` | 启用自定义颜色值 |
 | `sCustomColor` | 六位十六进制 RGB 颜色，例如 `FFFFFF` |
 
-颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色；过热条的阶段色以及过热状态覆盖色属于特殊状态，不会被普通颜色模式完全替换。
+颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色。普通过热填充、边框和文字跟随所选颜色；进入过热状态后仍保留红/黄闪烁警示色。
 
 ## Mechanics：总开关与随机初始耐久
 
@@ -117,4 +117,3 @@ MO2 的 `overwrite` 或用户专用配置优先于项目默认模板。MCM 保�
 | `bEnableLogging` | 写入 `ConditionSystemFramework.log` 的详细诊断日志 |
 
 遇到 Provider 未选中、FormID 未解析、分类错误或技能未识别时，先开启该项，再完全重启游戏复现。日志比只看 MCM 页面更能区分“配置未加载”和“规则加载但条件未命中”。
-

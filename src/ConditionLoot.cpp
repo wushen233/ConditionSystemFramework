@@ -20,16 +20,16 @@ namespace ConditionSystem
         if (!player) return baseRealPercent;
 
         std::shared_lock<std::shared_mutex> lock(g_profileMutex);
-        if (!g_lootBonusRule.enabled || g_lootBonusRule.requiredAV.runtimeFormID == 0 || g_lootBonusRule.tiers.empty()) return baseRealPercent;
+        if (g_lootBonusRule.tiers.empty()) return baseRealPercent;
 
-        auto avForm = RE::TESForm::GetFormByID<RE::ActorValueInfo>(g_lootBonusRule.requiredAV.runtimeFormID);
-        if (!avForm) return baseRealPercent;
-
-        float avVal = player->GetActorValue(*avForm);
+        float skillValue = 0.0f;
+        if (!TryGetSkillRequirementValue(g_lootBonusRule.requiredAV, player, skillValue)) {
+            return baseRealPercent;
+        }
 
         const LootBonusTier* activeTier = nullptr;
         for (const auto& tier : g_lootBonusRule.tiers) {
-            if (avVal >= tier.minAVLevel) {
+            if (skillValue >= tier.minLevel) {
                 activeTier = &tier;
                 break;
             }
@@ -37,12 +37,12 @@ namespace ConditionSystem
 
         if (!activeTier) return baseRealPercent;
 
-        static std::mt19937 randEngine(std::random_device{}());
+        static thread_local std::mt19937 randEngine(std::random_device{}());
         std::uniform_real_distribution<float> chanceDist(0.0f, 100.0f);
         float roll = chanceDist(randEngine);
 
         if (roll <= activeTier->hitChance) {
-            std::uniform_real_distribution<float> bonusDist(activeTier->bonusMinPct, activeTier->bonusMaxPct);
+            std::uniform_real_distribution<float> bonusDist(activeTier->bonusMin, activeTier->bonusMax);
             float bonus = bonusDist(randEngine);
             float newPercent = baseRealPercent + bonus;
             float maxAllowedDrop = g_lootBonusRule.globalCap;
@@ -85,7 +85,7 @@ namespace ConditionSystem
                 }
                 if (minVal > maxVal) std::swap(minVal, maxVal);
 
-                static std::mt19937 randEngine(std::random_device{}());
+                static thread_local std::mt19937 randEngine(std::random_device{}());
                 std::uniform_real_distribution<float> dist(minVal, maxVal);
                 realPercent = dist(randEngine);
 
@@ -148,7 +148,7 @@ namespace ConditionSystem
                 }
                 if (minVal > maxVal) std::swap(minVal, maxVal);
 
-                static std::mt19937 randEngine(std::random_device{}());
+                static thread_local std::mt19937 randEngine(std::random_device{}());
                 std::uniform_real_distribution<float> dist(minVal, maxVal);
                 realPercent = dist(randEngine);
                 if (realPercent > 1.0f) realPercent = 1.0f;
@@ -234,7 +234,8 @@ namespace ConditionSystem
                         float engineHealth = healthExtra ? healthExtra->health : 0.1f;
                         realPercent = GetDecompressedPct(weap, engineHealth);
 
-                        float currentMax = prof.maxDurability;
+                        float currentMax = GetEffectiveMaxDurability(
+                            weap, stack->extra ? stack->extra.get() : nullptr);
                         float currentPtsForUI = std::round(currentMax * realPercent);
 
                         if (a_actor == RE::PlayerCharacter::GetSingleton()) {

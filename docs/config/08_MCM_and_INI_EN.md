@@ -35,8 +35,8 @@ The unjam and heat widgets can select their backends independently through `iUnj
 | `iHeatWidgetType` | Heat widget backend |
 | `bShowItemCardCND` | Show CND on item cards |
 | `iItemCardCNDPosition` | Item-card CND position |
-| `fUnjamX/Y/Scale` | Unjam widget position and scale |
-| `fHeatWidgetX/Y/Scale` | Heat widget position and scale |
+| `fUnjamX/Y/Scale` | Unjam widget center-relative position and scale; `0, 0` is screen center |
+| `fHeatWidgetX/Y/Scale` | Heat widget center-relative position and scale; `0, 0` is screen center |
 | `fJuryStatsOffsetX/Y` | Jury Rigging stats offset |
 | `fJuryStatsRowSpacing` | Jury Rigging stats row spacing |
 | `iJuryStatsColorMode` | Jury stats color mode |
@@ -46,7 +46,7 @@ The unjam and heat widgets can select their backends independently through `iUnj
 | `bUseCustomColor` | Enable the custom color value |
 | `sCustomColor` | Six-digit hexadecimal RGB color, for example `FFFFFF` |
 
-Each widget reads its own color mode. HUD-following and custom-color modes are supported. Heat-stage colors and the overheated-state override are special states and are not fully replaced by the normal color mode.
+Each widget reads its own color mode. HUD-following and custom-color modes are supported. Normal heat fill, border and text follow the selected color; the overheated-state flash remains a red/yellow alert override.
 
 ## Mechanics: Switches and Initial Condition
 
@@ -117,4 +117,3 @@ The final repair cap also passes through skill tiers from `Repair/OverRepair/`; 
 | `bEnableLogging` | Write detailed diagnostics to `ConditionSystemFramework.log` |
 
 When a Provider is not selected, a FormID does not resolve, a category is wrong or a skill is not recognized, enable this setting and fully restart before reproducing. The log distinguishes “configuration was not loaded” from “the rule loaded but its condition did not match.”
-

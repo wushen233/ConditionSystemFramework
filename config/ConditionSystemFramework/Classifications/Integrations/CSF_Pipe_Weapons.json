@@ -1,0 +1,40 @@
+{
+  /*
+   * Pipe weapon marker used by Jury Rigging.
+   *
+   * dn_weap_Pipe is the stable vanilla Pipe signal found in the WRF
+   * classification and the CSF weapon audit example. Check both the base
+   * WEAP and the effective instance keywords so OMOD-driven Pipe variants
+   * receive the same marker.
+   *
+   * This is a modifier category, not a Weapon.Family or Weapon.Handling
+   * category. It therefore does not override the normal ballistic/handling
+   * resolution.
+   */
+  "schemaVersion": 2,
+  "module": "classifications",
+  "domain": "weapon",
+  "provider": "CSF Pipe Weapon Modifier Classification",
+  "requires": ["Fallout4.esm"],
+  "sourceTier": 200,
+  "categories": [
+    {
+      "id": "Weapon.Modifier.Pipe",
+      "ruleId": "CSF.PipeWeaponKeyword",
+      "domain": "weapon",
+      "sourceTier": 200,
+      "priority": 100,
+      "match": {
+        "combine": "any",
+        "base": {
+          "keywordsAny": ["dn_weap_Pipe"]
+        },
+        "instance": [
+          {
+            "effectiveKeywordsAny": ["dn_weap_Pipe"]
+          }
+        ]
+      }
+    }
+  ]
+}

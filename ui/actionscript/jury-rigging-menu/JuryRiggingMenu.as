@@ -461,7 +461,7 @@ package {
 
             if (_uiStates[uiTarget] == null) {
                 var initEqX:Number = (isMC && mc["EquipIcon_mc"]) ? mc["EquipIcon_mc"].x : 10;
-                _uiStates[uiTarget] = { origX: tf.x, origEqX: initEqX, icon: null };
+                _uiStates[uiTarget] = { origX: tf.x, origW: tf.width, origEqX: initEqX, icon: null, postIcons: {} };
             }
             var state:Object = _uiStates[uiTarget];
 
@@ -470,6 +470,7 @@ package {
             }
             state.icon = null;
             tf.x = state.origX;
+            tf.width = state.origW;
 
             if (isMC && mc["EquipIcon_mc"] != null && mc["EquipIcon_mc"].visible) {
                 var eqMc:DisplayObject = mc["EquipIcon_mc"];
@@ -508,6 +509,15 @@ package {
                     tagString = tm[1];
                     cleanName = cleanName.replace(tagRegExp, "").replace(/^\s+/, "");
                 }
+            }
+
+            // FallUI category tags can also use a leading parenthesized form,
+            // for example (MHat) or (ArmR). Remove it before subtitle parsing;
+            // otherwise the remaining name is treated as one unsplittable line.
+            var leadingParenTag:Object = /^(\([^)]*\))\s*/.exec(cleanName);
+            if (leadingParenTag && leadingParenTag.length > 1) {
+                if (tagString == "") tagString = String(leadingParenTag[1]).substr(1, String(leadingParenTag[1]).length - 2);
+                cleanName = cleanName.substr(String(leadingParenTag[0]).length);
             }
 
             var mainPart:String = cleanName;
@@ -591,18 +601,31 @@ package {
 
             tf.x = currentX;
 
-            var textEndX:Number = tf.x + tf.textWidth + 8;
+            // Keep the native entry text inside the name column. The native
+            // InvListEntry width is larger than this menu's name column and
+            // otherwise its text can draw over the repair/CND columns.
+            var textRight:Number = (isHeader ? colCondX : colPctX) - 8;
+            var availableTextW:Number = Math.max(24, textRight - currentX);
+            tf.width = availableTextW;
+            var textEndX:Number = Math.min(textRight, tf.x + Math.min(tf.textWidth, availableTextW) + 8);
             
             if (isMC) {
                 var postIcons:Array = ["FavIcon_mc", "LegendaryIcon_mc", "SearchIcon_mc"];
                 for each (var pIc:String in postIcons) {
                     if (mc.hasOwnProperty(pIc) && mc[pIc] != null && mc[pIc].visible) {
                         var pmc:DisplayObject = mc[pIc];
+                        if (state.postIcons[pIc] == undefined) state.postIcons[pIc] = true;
+                        pmc.visible = state.postIcons[pIc];
+                        if (!pmc.visible) continue;
                         var pb:Rectangle = pmc.getBounds(pmc);
                         
                         var visualCenterX:Number = pb.x + pb.width / 2;
                         var visualCenterY:Number = pb.y + pb.height / 2;
                         
+                        if (textEndX + 22 > textRight) {
+                            pmc.visible = false;
+                            continue;
+                        }
                         pmc.x = textEndX + 10 - visualCenterX;
                         pmc.y = Math.round(rowHeight / 2) - visualCenterY;
                         

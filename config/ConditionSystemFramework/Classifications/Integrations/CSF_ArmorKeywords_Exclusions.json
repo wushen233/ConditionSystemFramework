@@ -1,0 +1,35 @@
+{
+  /*
+   * ArmorKeywords 桥接排除 Provider。
+   */
+  "schemaVersion": 3,
+  "module": "armorClassifications",
+  "domain": "armor",
+  "provider": "CSF ArmorKeywords Bridge Exclusions",
+  "requires": [
+    "ArmorKeywords.esm",
+    "CSF - ArmorKeywords Bridge.esp"
+  ],
+  "ProviderPriority": 100,
+  "groups": {
+    "Armor.Flag": {
+      "mode": "coexisting"
+    }
+  },
+  "resolution": {
+    "contextPriorities": {
+      "base": 100,
+      "instance": 200
+    }
+  },
+  "modRoles": {},
+  "classifications": {
+    "Armor.Flag.Ignore": [
+      {
+        "list": "CSF - ArmorKeywords Bridge.esp|0x00000B",
+        "contexts": ["base"],
+        "listPriority": 100
+      }
+    ]
+  }
+}

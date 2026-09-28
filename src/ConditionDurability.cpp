@@ -2,6 +2,7 @@
 #include "ConditionCore.h"
 #include "ConditionUI.h"
 #include "ProfileManager.h"
+#include "ConditionMath.h"
 
 #include <random>
 #include <algorithm>
@@ -152,7 +153,7 @@ namespace ConditionSystem
         }
 
         // 核心实战减伤：如果护甲耐久低于 50%，防御力随之崩塌
-        float currentDurability = GetStackDurabilityPercent(a_stack);
+        float currentDurability = GetStackDurabilityPercent(a_armor, a_stack);
         if (currentDurability < 0.5f) {
             float penaltyMult = currentDurability * 2.0f; // 50%耐久=100%抗性，25%耐久=50%抗性，0%耐久=0抗性
             if (penaltyMult < 0.0f) penaltyMult = 0.0f;
@@ -257,10 +258,11 @@ namespace ConditionSystem
 
                 for (auto stack = item.stackData.get(); stack; stack = stack->nextStack.get()) {
                     if (stack->IsEquipped()) {
+                        currentWeaponProfile = GetProfileForWeapon(
+                            weap, stack->extra ? stack->extra.get() : nullptr);
                         float attachDegradeMult = 1.0f;
                         bool immuneToJam = false;
                         float omodDegradeRateFlat = 0.0f;
-                        float omodMaxDurabilityMult = 1.0f;
                         RE::TESAmmo* currentAmmo = nullptr;
 
                         {
@@ -280,7 +282,6 @@ namespace ConditionSystem
                             auto omodResult = AccumulateOmodEffects(stack->extra.get(), "OMOD");
                             attachDegradeMult *= omodResult.degradeMult;
                             omodDegradeRateFlat += omodResult.degradeRateFlat;
-                            omodMaxDurabilityMult *= omodResult.maxDurabilityMult;
                             if (omodResult.immuneToJam) immuneToJam = true;
 
                             if (instExtra && instExtra->data) {
@@ -320,10 +321,21 @@ namespace ConditionSystem
 
                         float durabilityCost = currentWeaponProfile.degradeRate * attachDegradeMult * currentAmmoProfile.weaponWearMult;
                         if (currentWeaponProfile.degradeRate == 0.0f || attachDegradeMult == 0.0f) durabilityCost = 0.0f;
-                        durabilityCost += omodDegradeRateFlat;
+                        float skillWearMult = 1.0f;
+                        float skillWearFlat = 0.0f;
+                        if (a_actor == RE::PlayerCharacter::GetSingleton())
+                            GetSkillWearEffects(weap, stack->extra ? stack->extra.get() : nullptr, true, skillWearMult, skillWearFlat);
+                        durabilityCost = durabilityCost * skillWearMult + omodDegradeRateFlat + skillWearFlat;
                         if (durabilityCost < 0.0f) durabilityCost = 0.0f;
+                        durabilityCost *= g_mcmSettings.weaponWearMultiplier.load();
+                        const auto weaponIdentity = BuildWeaponInstanceIdentity(weap, stack);
+                        const auto faultSnapshot = GetWeaponFaultSnapshot();
+                        if (faultSnapshot.IsOverheated() && faultSnapshot.heatOwner == weaponIdentity) {
+                            durabilityCost *= std::clamp(g_mcmSettings.overheatWearMultiplier.load(), 1.0f, 10.0f);
+                        }
 
-                        float currentMax = currentWeaponProfile.maxDurability * omodMaxDurabilityMult;
+                        float currentMax = GetEffectiveMaxDurability(
+                            weap, stack->extra ? stack->extra.get() : nullptr);
                         float finalRealPercent = ApplyDurabilityDamage(weap, stack, durabilityCost, currentMax);
                         float remainingPoints = std::round(finalRealPercent * currentMax);
 
@@ -347,7 +359,11 @@ namespace ConditionSystem
                                 REX::INFO("  -> [武器报废] 武器耐久归零，执行强制卸载！");
                             }
 
-                            NotifyDurabilityDepleted(a_actor, stack, "$CSF_WeaponDestroyed", -ARMOR_MIN_ENGINE_HEALTH);
+                            NotifyDurabilityDepleted(
+                                a_actor,
+                                stack,
+                                GetGameSettingText("sWeaponBreak", "$CSF_WeaponDestroyed"),
+                                -ARMOR_MIN_ENGINE_HEALTH);
 
                             auto taskActorHandle = a_actor->GetHandle();
                             auto taskWeapFormID = weap->GetFormID();
@@ -367,23 +383,22 @@ namespace ConditionSystem
                                     }
                                     });
                             }
-                            g_isWeaponJammed.store(false);
-                            g_jammedWeaponUniqueID.store(0);
+                            ClearWeaponFault(weaponIdentity);
                             return;
                         }
 
-                        bool canWeaponJam = currentWeaponProfile.canJam && !immuneToJam;
-                        float jamThreshold = g_mcmSettings.jamThreshold.load();
+                        const WeaponMechanism mechanism = GetWeaponMechanism(weap, currentAmmo, &currentWeaponProfile);
+                        const bool canWeaponJam = mechanism != WeaponMechanism::None &&
+                            mechanism != WeaponMechanism::Overheat && !immuneToJam;
+                        const float jamThreshold = g_mcmSettings.jamThreshold.load();
 
                         if (ConditionSystem::g_mcmSettings.iJammingPhase.load() == 0) {
-                            if (canWeaponJam && jamThreshold > 0.0f && a_actor == RE::PlayerCharacter::GetSingleton() && finalRealPercent < jamThreshold && finalRealPercent > 0.0f) {
-                                float maxJamChance = g_mcmSettings.maxJamChance.load();
-                                float currentJamChance = ((jamThreshold - finalRealPercent) / jamThreshold) * maxJamChance;
-                                static std::mt19937 randEngine(std::random_device{}());
-                                std::uniform_real_distribution<float> randDist(0.0f, 1.0f);
-                                if (randDist(randEngine) < currentJamChance) {
-                                    g_isWeaponJammed.store(true);
-                                    g_jammedWeaponUniqueID.store(reinterpret_cast<std::uintptr_t>(stack));
+                            if (canWeaponJam && jamThreshold > 0.0f && a_actor == RE::PlayerCharacter::GetSingleton() &&
+                                finalRealPercent < jamThreshold && finalRealPercent > 0.0f &&
+                                RollForJam(finalRealPercent, mechanism)) {
+                                if (mechanism == WeaponMechanism::EnergyFault) {
+                                    StartEnergyFault();
+                                } else if (StartBallisticJam()) {
                                     RE::SendHUDMessage::ShowHUDMessage("$CSF_JammedNeedReload", "WPNPistol10mmFireDry", true, true);
                                 }
                             }
@@ -464,7 +479,8 @@ namespace ConditionSystem
                     auto armor = item.object->As<RE::TESObjectARMO>();
                     if (!armor || HasKeywordString(armor, nullptr, "ArmorTypePower") || !GetItemFlags(armor).enableDurabilitySystem) continue;
 
-                    ArmorProfile currentArmorProfile = GetProfileForArmor(armor);
+                    ArmorProfile currentArmorProfile = GetProfileForArmor(
+                        armor, stack->extra ? stack->extra.get() : nullptr);
                     if (currentArmorProfile.isExcluded) continue;
 
                     if (stack->count > 1) continue;
@@ -633,7 +649,7 @@ namespace ConditionSystem
             }
         }
         else if (!isExplosion) {
-            static std::mt19937 randEngine(std::random_device{}());
+            static thread_local std::mt19937 randEngine(std::random_device{}());
             std::uniform_int_distribution<int> dist(1, 100);
             int roll = dist(randEngine);
             if (roll <= 10) { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kHead1; limbName = "头部"; mainZone = 0; }
@@ -706,11 +722,13 @@ namespace ConditionSystem
                     float scratchMultiplier = 1.0f;
                     std::string resultStr = "常规拦截吸收";
 
-                    if (blockPercentage >= g_damageFormula.glanceThreshold || blockPercentage >= 0.90f) {
+                    const auto phase = Math::SelectArmorWearPhase(blockPercentage,
+                        g_damageFormula.glanceThreshold, g_damageFormula.scratchThreshold);
+                    if (phase == Math::ArmorWearPhase::Glance) {
                         resultStr = "完美防御/装甲全额承受冲击";
                         scratchMultiplier = g_damageFormula.glanceMultiplier;
                     }
-                    else if (blockPercentage <= g_damageFormula.scratchThreshold || blockPercentage <= 0.20f) {
+                    else if (phase == Math::ArmorWearPhase::Scratch) {
                         resultStr = "护甲被贯穿/未起到有效拦截";
                         scratchMultiplier = g_damageFormula.scratchMultiplier;
                     }
@@ -739,12 +757,23 @@ namespace ConditionSystem
 
             // 共享 omod 遍历：护甲上已安装的改装件影响耐久损耗
             auto omodResult = AccumulateOmodEffects(hitData.stack->extra ? hitData.stack->extra.get() : nullptr, "OMOD-护甲");
-            durabilityCost = durabilityCost * omodResult.degradeMult + omodResult.degradeRateFlat;
+            float skillWearMult = 1.0f;
+            float skillWearFlat = 0.0f;
+            if (a_actor == RE::PlayerCharacter::GetSingleton())
+                GetSkillWearEffects(hitData.armor, hitData.stack->extra ? hitData.stack->extra.get() : nullptr, false, skillWearMult, skillWearFlat);
+            durabilityCost = durabilityCost * omodResult.degradeMult * skillWearMult + omodResult.degradeRateFlat + skillWearFlat;
             if (durabilityCost < 0.01f) durabilityCost = 0.01f;
-            hitData.profile.maxDurability *= omodResult.maxDurabilityMult;
+            durabilityCost *= g_mcmSettings.armorWearMultiplier.load();
+            const float effectiveMaximum = GetEffectiveMaxDurability(
+                hitData.armor, hitData.stack->extra ? hitData.stack->extra.get() : nullptr);
 
-            float finalRealPercent = ApplyDurabilityDamage(hitData.armor, hitData.stack, durabilityCost, hitData.profile.maxDurability);
-            float remainingPoints = finalRealPercent * hitData.profile.maxDurability;
+            float finalRealPercent = ApplyDurabilityDamage(hitData.armor, hitData.stack, durabilityCost, effectiveMaximum);
+            float remainingPoints = finalRealPercent * effectiveMaximum;
+
+            if (ConditionSystem::g_mcmSettings.enableArmorCondition.load() &&
+                ConditionSystem::g_mcmSettings.armorConditionAffectsResistance.load()) {
+                ConditionSystem::QueuePlayerArmorRatingRefresh();
+            }
 
             std::string layerTypeLog = hitData.isInner ? "内衬软甲" : "外层硬甲";
             if (g_mcmSettings.enableLogging.load()) {
@@ -760,130 +789,4 @@ namespace ConditionSystem
         }
     }
 
-    // =========================================================================
-    // 魔法/环境侵蚀核心
-    // =========================================================================
-
-    void DeductEquippedArmorDurabilityFromMagic(RE::Actor* a_actor, const RE::TESMagicEffectApplyEvent& a_event)
-    {
-        if (!a_actor || !a_actor->inventoryList) return;
-
-        auto effectForm = RE::TESForm::GetFormByID(a_event.magicEffectFormID);
-        if (!effectForm) return;
-
-        std::vector<std::string> damageKeywords = ExtractKeywords(effectForm);
-        std::string damageName = "Unknown Magic";
-        if (auto fullName = effectForm->As<RE::TESFullName>()) {
-            if (fullName->GetFullName()) damageName = GameUTF8ToLocal(fullName->GetFullName());
-        }
-
-        bool hasElementalKeyword = false;
-        for (const auto& kw : damageKeywords) {
-            if (kw.find("DamageType") != std::string::npos && kw.find("DamageTypePhysical") == std::string::npos) {
-                hasElementalKeyword = true; break;
-            }
-            if (kw.find("Hazard") != std::string::npos) {
-                hasElementalKeyword = true; break;
-            }
-        }
-
-        std::string lowerName = damageName;
-        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
-
-        bool hasDamageName = (lowerName.find("fire") != std::string::npos || lowerName.find("burn") != std::string::npos ||
-            lowerName.find("poison") != std::string::npos || lowerName.find("acid") != std::string::npos ||
-            lowerName.find("radiation") != std::string::npos || lowerName.find("rads") != std::string::npos ||
-            lowerName.find("cryo") != std::string::npos || lowerName.find("electric") != std::string::npos ||
-            lowerName.find("火") != std::string::npos || lowerName.find("毒") != std::string::npos ||
-            lowerName.find("酸") != std::string::npos || lowerName.find("辐射") != std::string::npos);
-
-        if (!hasElementalKeyword && !hasDamageName) return;
-
-        static auto s_lastMagicHitTime = std::chrono::steady_clock::now();
-        auto now = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - s_lastMagicHitTime).count() < 1000) return;
-        s_lastMagicHitTime = now;
-
-        float totalImpact = 4.0f;
-
-        RE::BGSBodyPartDefs::LIMB_ENUM precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kTorso;
-        std::string limbName = "躯干";
-        int mainZone = 1;
-        static std::mt19937 randEngine(std::random_device{}());
-        std::uniform_int_distribution<int> dist(1, 100);
-        int roll = dist(randEngine);
-        if (roll <= 10) { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kHead1; limbName = "头部"; mainZone = 0; }
-        else if (roll <= 50) { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kTorso; limbName = "躯干"; mainZone = 1; }
-        else if (roll <= 65) { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kLeftArm1; limbName = "左臂"; mainZone = 2; }
-        else if (roll <= 80) { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kRightArm1; limbName = "右臂"; mainZone = 3; }
-        else if (roll <= 90) { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kLeftLeg1; limbName = "左腿"; mainZone = 4; }
-        else { precisionLimb = RE::BGSBodyPartDefs::LIMB_ENUM::kRightLeg1; limbName = "右腿"; mainZone = 5; }
-
-        if (g_mcmSettings.enableLogging.load()) {
-            REX::INFO("[事件拦截] 遭到魔法/环境 [{}] 侵蚀！最终环境冲击力:{:.1f}。受蚀精密区域:[{}], 开始结算...", damageName, totalImpact, limbName);
-        }
-
-        auto [isInPAFrame, paCovers] = DetectPowerArmorCoverage(a_actor);
-        auto [hitArmorsVec, outerCovers] = CollectHitArmors(a_actor, mainZone, false); // isExplosion = false
-        auto& hitArmors = hitArmorsVec;
-
-        for (auto& hitData : hitArmors) {
-            std::string armorName = "未知服装";
-            if (auto fullName = hitData.armor->As<RE::TESFullName>()) {
-                if (fullName->GetFullName()) armorName = GameUTF8ToLocal(fullName->GetFullName());
-            }
-
-            int actualHitZone = mainZone;
-
-            if (isInPAFrame && paCovers[actualHitZone]) {
-                if (g_mcmSettings.enableLogging.load()) REX::INFO("  -> [动力甲绝对防护] 动力甲片完美阻绝了外界侵蚀！");
-                continue;
-            }
-
-            float paFrameMultiplier = 1.0f;
-            if (isInPAFrame) paFrameMultiplier = 0.5f;
-
-            float layerMultiplier = 1.0f;
-            if (hitData.isInner && outerCovers[actualHitZone]) layerMultiplier = 0.15f;
-
-            float durabilityCost = 0.01f;
-
-            if (hitData.profile.useFlatDegrade) {
-                durabilityCost = hitData.profile.degradeRate * layerMultiplier * paFrameMultiplier;
-            }
-            else {
-                float effectiveResist = GetNativeEffectiveResistance(hitData.item, hitData.stack, hitData.armor, nullptr, damageKeywords);
-                float hardness = g_damageFormula.baseHardness + effectiveResist;
-                if (hardness < 1.0f) hardness = 1.0f;
-                durabilityCost = (totalImpact / hardness) * g_damageFormula.durabilityDamageConstant * layerMultiplier * paFrameMultiplier;
-
-                if (g_mcmSettings.enableLogging.load()) {
-                    REX::INFO("  -> [原生元素抗性联动] 提取护甲有效元素抗性: {:.1f} -> 计算得出魔法硬度: {:.1f}", effectiveResist, hardness);
-                    REX::INFO("  -> [装甲元素损耗判定] {} -> 最终扣除绝缘层耐久基数: {:.3f}", armorName, durabilityCost);
-                }
-            }
-
-            // 共享 omod 遍历：护甲上已安装的改装件影响耐久损耗（魔法/环境版）
-            auto omodResult = AccumulateOmodEffects(hitData.stack->extra ? hitData.stack->extra.get() : nullptr, "OMOD-护甲/元素");
-            durabilityCost = durabilityCost * omodResult.degradeMult + omodResult.degradeRateFlat;
-            if (durabilityCost < 0.01f) durabilityCost = 0.01f;
-            hitData.profile.maxDurability *= omodResult.maxDurabilityMult;
-
-            float finalRealPercent = ApplyDurabilityDamage(hitData.armor, hitData.stack, durabilityCost, hitData.profile.maxDurability);
-            float remainingPoints = finalRealPercent * hitData.profile.maxDurability;
-
-            std::string layerTypeLog = hitData.isInner ? "内衬软甲" : "外层硬甲";
-
-            if (g_mcmSettings.enableLogging.load()) {
-                REX::INFO("  -> [元素磨损结算] [{}] ({}) 最终扣除:{:.2f}, 当前剩余:{:.1f}%", armorName, layerTypeLog, durabilityCost, finalRealPercent * 100.0f);
-            }
-
-            // 护甲耐久归零保护：钳制到最低安全值，不再强制卸载
-            if (remainingPoints <= 0.0f) {
-                CS_LOG("  -> [耐久耗尽] [{}] 护甲已被元素彻底侵蚀(剩余0%)，但仍可穿戴。", armorName);
-                NotifyDurabilityDepleted(a_actor, hitData.stack, "$CSF_ArmorWornOut", ARMOR_MIN_ENGINE_HEALTH);
-                // 不再强制卸载，玩家可继续穿戴残废护甲（属性衰减由 GetWeaponDegradationMultiplier 处理）
-            }
-        }
-    }
 }

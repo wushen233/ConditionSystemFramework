@@ -1,0 +1,115 @@
+{
+  "OverRepairRules": [
+    {
+      "RuleName": "Over-Repair Firearms (Gun Nut)",
+      "RequiredSkill": {
+        "Type": "Perk",
+        "FormID": "0x0004A0DA"
+      },
+      "SkillThresholds": [
+        {
+          "threshold": 0,
+          "maxValue": 1.0
+        },
+        {
+          "threshold": 1,
+          "maxValue": 1.25
+        },
+        {
+          "threshold": 2,
+          "maxValue": 1.5
+        },
+        {
+          "threshold": 3,
+          "maxValue": 1.75
+        },
+        {
+          "threshold": 4,
+          "maxValue": 2.0
+        }
+      ],
+      "AppliesTo": {
+        "categories": [
+          "Weapon.Handling.Pistol",
+          "Weapon.Handling.Rifle",
+          "Weapon.Handling.Heavy"
+        ]
+      }
+    },
+    {
+      "RuleName": "Over-Repair Melee Weapons (Blacksmith)",
+      "RequiredSkill": {
+        "Type": "Perk",
+        "FormID": "0x0004B253"
+      },
+      "SkillThresholds": [
+        {
+          "threshold": 0,
+          "maxValue": 1.0
+        },
+        {
+          "threshold": 1,
+          "maxValue": 1.25
+        },
+        {
+          "threshold": 2,
+          "maxValue": 1.5
+        },
+        {
+          "threshold": 3,
+          "maxValue": 1.75
+        },
+        {
+          "threshold": 4,
+          "maxValue": 2.0
+        }
+      ],
+      "AppliesTo": {
+        "categories": [
+          "Weapon.Family.Melee"
+        ]
+      }
+    },
+    {
+      "RuleName": "Over-Repair Armor and Power Armor (Armorer)",
+      "RequiredSkill": {
+        "Type": "Perk",
+        "FormID": "0x0004B254"
+      },
+      "SkillThresholds": [
+        {
+          "threshold": 0,
+          "maxValue": 1.0
+        },
+        {
+          "threshold": 1,
+          "maxValue": 1.3
+        },
+        {
+          "threshold": 2,
+          "maxValue": 1.6
+        },
+        {
+          "threshold": 3,
+          "maxValue": 1.8
+        },
+        {
+          "threshold": 4,
+          "maxValue": 2.0
+        }
+      ],
+      "AppliesTo": {
+        "categories": [
+          "Armor.Material.Textile",
+          "Armor.Material.Flexible",
+          "Armor.Material.Rigid",
+          "Armor.Material.Scrap"
+        ]
+      }
+    }
+  ],
+  "RequiredPlugin": "Fallout4.esm",
+  "ProviderPriority": 0,
+  "schemaVersion": 3,
+  "module": "Repair.OverRepair"
+}

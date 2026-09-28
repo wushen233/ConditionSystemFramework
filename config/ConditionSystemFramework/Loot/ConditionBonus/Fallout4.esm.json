@@ -1,0 +1,35 @@
+{
+  "LootBonusRule": {
+    "GlobalCap": 2.0,
+    "RequiredSkill": {
+      "Type": "AV",
+      "Plugin": "Fallout4.esm",
+      "FormID": "0x000002C8",
+      "ScaleFactor": 100.0
+    },
+    "Tiers": [
+      {
+        "minLevel": 5.0,
+        "hitChance": 2.0,
+        "bonusMin": 0.05,
+        "bonusMax": 0.15
+      },
+      {
+        "minLevel": 8.0,
+        "hitChance": 5.0,
+        "bonusMin": 0.15,
+        "bonusMax": 0.3
+      },
+      {
+        "minLevel": 10.0,
+        "hitChance": 10.0,
+        "bonusMin": 0.3,
+        "bonusMax": 0.5
+      }
+    ]
+  },
+  "RequiredPlugin": "Fallout4.esm",
+  "ProviderPriority": 0,
+  "schemaVersion": 1,
+  "module": "Loot.ConditionBonus"
+}

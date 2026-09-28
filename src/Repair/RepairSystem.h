@@ -51,13 +51,15 @@ namespace ConditionSystem::Repair
     
     bool LockHoveredTarget(std::uint32_t a_formID, bool a_isEquipped, std::uint32_t a_exactStackIndex, bool a_stackIndexMode = false);
     void ProcessPendingDeletions();
+    void ResetRuntimeState();
 
 
     // =========================================================================
     // 模块 5：Pipboy 界面交互与 Jury Rigging (同类互修)
     // =========================================================================
     
-    uint32_t GetPipboyColor(); 
+    uint32_t GetPipboyColor();
+    uint32_t GetHudColor();
 
     void OpenJuryRiggingMenu(std::uint32_t a_itemIndex); 
     std::string GetJuryRiggingDataString(std::uint16_t a_targetUID);
@@ -65,6 +67,7 @@ namespace ConditionSystem::Repair
     bool ExecuteJuryRigging(std::uint16_t a_targetUID, std::uint16_t a_materialUID);
 
     void InjectConditionSystemCallback(Scaleform::GFx::Movie* movie);
+    void RefreshExamineMenuButtons(Scaleform::GFx::Movie* movie);
     
 
     // =========================================================================
@@ -74,5 +77,11 @@ namespace ConditionSystem::Repair
     void RegisterEquipEventSink();
     
     void Papyrus_UseRepairKit(std::monostate, RE::Actor* akActor, RE::TESBoundObject* akKit);
+    bool Papyrus_IsConditionManaged(std::monostate, RE::TESBoundObject* a_item);
+    float Papyrus_GetEquippedWeaponConditionPct(std::monostate, RE::Actor* a_actor);
+    bool Papyrus_SetEquippedWeaponConditionPct(std::monostate, RE::Actor* a_actor, float a_percent);
+    bool Papyrus_ModEquippedWeaponConditionPct(std::monostate, RE::Actor* a_actor, float a_deltaPercent);
+    float Papyrus_GetEquippedArmorConditionPct(std::monostate, RE::Actor* a_actor);
+    bool Papyrus_CanJuryRig(std::monostate, RE::TESBoundObject* a_target, RE::TESBoundObject* a_material);
     bool RegisterPapyrusFunctions(RE::BSScript::IVirtualMachine* a_vm);
 }

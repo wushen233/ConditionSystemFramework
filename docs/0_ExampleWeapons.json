@@ -10,7 +10,7 @@
       // Highest priority because pipe weapons also carry pistol/rifle keywords
       "priority": 100,
       "maxDurability": 400.0,  // 废土自制武器极易损坏 / Wasteland-built weapons break easily
-      "degradeRate": 2.0,       // 每次射击磨损倍率 / Wear multiplier per shot
+      "degradeRate": 2.0,       // 每次射击基础磨损点数 / Base wear points per shot
       "canJam": true,           // 铁管武器容易卡壳 / Pipe weapons jam easily
       "keywords": [ ["dn_weap_Pipe"] ],
       "formIDs": []
@@ -38,6 +38,7 @@
       "maxDurability": 1000.0,
       "degradeRate": 2.5,
       "canJam": true,
+      "mechanism": "energy_fault", // 显式使用能量故障；省略则使用通用自动判断
       // 多个关键词组（OR）/ Multiple keyword groups (OR)
       // 满足任一组即匹配该配置 / Matching any group activates this profile
       "keywords": [
@@ -57,6 +58,7 @@
       "maxDurability": 1000.0,
       "degradeRate": 2.0,
       "canJam": false,            // 近战武器不会卡壳 / Melee weapons cannot jam
+      "mechanism": "none",       // 明确关闭三种故障机制 / Explicitly disable all three mechanisms
       "keywords": [
         ["WeaponTypeMelee1H"],
         ["WeaponTypeMelee2H"],

@@ -246,6 +246,10 @@ package
 
       public var currentRepairLimitNum:Number = 100;
 
+      private var csfWorkbenchContextKnown:Boolean = false;
+
+      private var csfLastRobotWorkbench:Boolean = false;
+
       public var currentRepairLimitText:String = "";
 
       public var repairCostTimeout:uint = 0;
@@ -352,10 +356,84 @@ package
          }
       }
 
+      private function CancelCSFRepairTimers() : void
+      {
+         clearTimeout(this.repairCostTimeout);
+         clearTimeout(this.repairKitButtonStateTimeout);
+         this.repairCostTimeout = 0;
+         this.repairKitButtonStateTimeout = 0;
+         this.repairKitButtonStateRequesting = false;
+      }
+
       // === ConditionSystemFramework repair-mode logic ===
+
+      private function IsRobotWorkbench() : Boolean
+      {
+         try
+         {
+            return this._mod != null && this._mod.isRobotWorkbench === true;
+         }
+         catch(e:Error)
+         {
+         }
+         return false;
+      }
+
+      private function NotifyCSFWorkbenchContext() : void
+      {
+         var isRobot:Boolean = this.IsRobotWorkbench();
+         if(root.ConditionSystem_Call == null)
+         {
+            return;
+         }
+         if(!this.csfWorkbenchContextKnown || this.csfLastRobotWorkbench != isRobot)
+         {
+            root.ConditionSystem_Call("SetWorkbenchContext",isRobot ? 1 : 0);
+            this.csfWorkbenchContextKnown = true;
+            this.csfLastRobotWorkbench = isRobot;
+         }
+      }
+
+      private function ResetCSFRepairStateForRobotWorkbench() : void
+      {
+         this.CancelCSFRepairTimers();
+
+         if(this.isRepairModeActive)
+         {
+            this.isRepairModeActive = false;
+            this.ItemName_tf.visible = true;
+            this.ModDescriptionBase_mc.visible = true;
+            this.ClearComparisonData();
+            this.removeEventListener(Event.ENTER_FRAME,this.LockRepairList);
+         }
+
+         this.cachedRepairCost = null;
+         this.cachedRepairMaterials = null;
+         this.cachedRepairKits = null;
+         this.currentRepairLimitText = "";
+         this.hasMissingMaterials = false;
+         this.repairKitButtonEnabled = false;
+         this.repairKitButtonCount = 0;
+         this.repairKitButtonSupported = false;
+         this.repairMaterialButtonSupported = false;
+         this.repairTargetSupported = false;
+         if(this.RepairConfirmBtn != null) this.RepairConfirmBtn.ButtonVisible = false;
+         if(this.RepairTagBtn != null) this.RepairTagBtn.ButtonVisible = false;
+         if(this.RepairCancelBtn != null) this.RepairCancelBtn.ButtonVisible = false;
+         if(this.RepairSourceBtn != null) this.RepairSourceBtn.ButtonVisible = false;
+         if(this.ToggleRepairModeBtn != null) this.ToggleRepairModeBtn.ButtonVisible = false;
+         this.UpdateDescription();
+      }
 
       public function ToggleRepairMode() : void
       {
+         this.NotifyCSFWorkbenchContext();
+         if(this.IsRobotWorkbench())
+         {
+            this.ResetCSFRepairStateForRobotWorkbench();
+            this.UpdateButtons();
+            return;
+         }
          if(this._allowEquip)
          {
             return;
@@ -391,6 +469,7 @@ package
          {
             this.BGSCodeObj.PlaySound("UIMenuCancel");
             this.workbenchRepairSourceMode = 0;
+            this.CancelCSFRepairTimers();
             this.ResetRepairKitButtonStateRequest();
             this.ItemName_tf.visible = true;
             this.ModDescriptionBase_mc.visible = true;
@@ -577,7 +656,7 @@ package
 
       public function RequestCurrentRepairCost() : void
       {
-         if(this.isRepairModeActive && root.ConditionSystem_Call != null)
+         if(!this.IsRobotWorkbench() && this.isRepairModeActive && root.ConditionSystem_Call != null)
          {
             root.ConditionSystem_Call("RequestRepairCost");
          }
@@ -589,7 +668,7 @@ package
          var formID:Number;
          var equipState:Number;
          var stackID:Number;
-         if(!this.repairKitButtonSupported || !this.repairKitButtonEnabled)
+         if(this.IsRobotWorkbench() || !this.repairKitButtonSupported || !this.repairKitButtonEnabled)
          {
             this.BGSCodeObj.PlaySound("UIMenuCancel");
             return;
@@ -607,6 +686,11 @@ package
 
       public function RequestRepairKitButtonState() : void
       {
+         if(this.IsRobotWorkbench())
+         {
+            this.repairKitButtonStateRequesting = false;
+            return;
+         }
          var selectedEntry:Object;
          var formID:Number;
          var equipState:Number;
@@ -625,6 +709,11 @@ package
       public function RequestRepairKitButtonStateWithDelay(ms:uint) : void
       {
          clearTimeout(this.repairKitButtonStateTimeout);
+         if(this.IsRobotWorkbench())
+         {
+            this.repairKitButtonStateTimeout = 0;
+            return;
+         }
          this.repairKitButtonStateTimeout = setTimeout(this.RequestRepairKitButtonState,ms);
       }
 
@@ -701,6 +790,11 @@ package
 
       public function SetRepairKitButtonState(enabled:Boolean, count:Number, targetSupported:Boolean = true, materialSupported:Boolean = true, kitSupported:Boolean = true) : void
       {
+         if(this.IsRobotWorkbench())
+         {
+            this.ResetCSFRepairStateForRobotWorkbench();
+            return;
+         }
          var nextCount:int = isNaN(count) ? 0 : int(count);
          var changed:Boolean = this.repairKitButtonEnabled != enabled || this.repairKitButtonCount != nextCount || this.repairKitButtonSupported != kitSupported || this.repairMaterialButtonSupported != materialSupported || this.repairTargetSupported != targetSupported;
          this.repairKitButtonStateRequesting = false;
@@ -1144,6 +1238,7 @@ package
          this.ModsListHints.push(this.CameraButton);
          this.ModSlotButtonHints.push(this.CameraButton);
          this._mod.isRobotWorkbench = true;
+         this.NotifyCSFWorkbenchContext();
       }
 
       public function get inspectMode() : *
@@ -1454,6 +1549,7 @@ package
          root.RefreshAfterRepair = this.RefreshAfterRepair;
          root.RefreshAfterRepairToPercent = this.RefreshAfterRepairToPercent;
          root.SetRepairKitButtonState_Call = this.SetRepairKitButtonState;
+         this.NotifyCSFWorkbenchContext();
       }
 
       public function FillPossibleModPartArray(param1:Event) : *
@@ -1784,7 +1880,12 @@ package
       {
          var _loc_repair_:Vector.<BSButtonHintData>;
          var hasValidBill:Boolean;
-         if(!this.isRepairModeActive && this.eMode == this.INVENTORY_MODE && !this._allowEquip)
+         this.NotifyCSFWorkbenchContext();
+         if(this.IsRobotWorkbench())
+         {
+            this.ResetCSFRepairStateForRobotWorkbench();
+         }
+         if(!this.IsRobotWorkbench() && !this.isRepairModeActive && this.eMode == this.INVENTORY_MODE && !this._allowEquip)
          {
             this.RequestRepairKitButtonStateWithDelay(75);
          }
@@ -2323,6 +2424,7 @@ package
 
       private function onBackButton() : void
       {
+         this.CancelCSFRepairTimers();
          if(this.isRepairModeActive)
          {
             this.isRepairModeActive = false;

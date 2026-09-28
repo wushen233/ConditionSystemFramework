@@ -10,9 +10,19 @@ namespace ConditionSystem::Workbench
 {
     std::atomic<RE::TESBoundObject*> g_hoveredObject{ nullptr };
     std::atomic<void*> g_hoveredStack{ nullptr };
+    std::atomic_bool g_isRobotWorkbench{ false };
+    static std::atomic_bool g_isExamineMenuOpen{ false };
+    static std::atomic_uint64_t g_examineMenuGeneration{ 0 };
+
+    struct WorkbenchTarget
+    {
+        RE::TESBoundObject* object{ nullptr };
+        RE::BGSInventoryItem::Stack* stack{ nullptr };
+    };
     
     static std::vector<RepairMaterial> g_pendingCosts; 
-    static std::mutex s_costMutex;  // 🐛 保护 g_pendingCosts 并发访问
+    static WorkbenchTarget g_pendingRepairTarget;
+    static std::mutex s_costMutex;
 
     struct WorkbenchRepairKitOption
     {
@@ -28,9 +38,77 @@ namespace ConditionSystem::Workbench
     static std::uint16_t g_pendingConfirmKitID = 0;
     static constexpr std::size_t kRepairKitButtonsPerPage = 2;
 
+    struct PendingExamineMenuUpdate
+    {
+        bool hasButtonState{ false };
+        bool buttonEnabled{ false };
+        std::uint32_t buttonCount{ 0 };
+        bool buttonSupported{ false };
+
+        bool hasRepairCost{ false };
+        std::string repairCost;
+        std::uint64_t generation{ 0 };
+    };
+
+    static PendingExamineMenuUpdate g_pendingExamineMenuUpdate;
+    static std::mutex s_examineMenuUpdateMutex;
+    static bool g_examineMenuUpdateTaskQueued = false;
+
+    static void ScheduleExamineMenuUpdate();
+
+    void SetExamineMenuOpen(bool a_open)
+    {
+        g_examineMenuGeneration.fetch_add(1, std::memory_order_acq_rel);
+        g_isExamineMenuOpen.store(a_open, std::memory_order_release);
+
+        // Drop updates belonging to the previous ExamineMenu instance. The
+        // task itself may remain queued, but it will see an empty payload or a
+        // newer generation and will never invoke the old movie.
+        std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+        g_pendingExamineMenuUpdate = {};
+    }
+
+    bool IsExamineMenuOpen()
+    {
+        return g_isExamineMenuOpen.load(std::memory_order_acquire);
+    }
+
     static std::unordered_map<std::uint32_t, RE::BGSConstructibleObject*> g_recipeCache;
     static std::mutex s_cacheMutex;  // 🐛 保护 g_recipeCache 与 g_cacheInitialized
     static bool g_cacheInitialized = false;
+
+    void SetRobotWorkbenchContext(bool a_isRobotWorkbench)
+    {
+        const bool wasRobotWorkbench = g_isRobotWorkbench.exchange(a_isRobotWorkbench);
+        if (a_isRobotWorkbench && !wasRobotWorkbench) {
+            ClearRuntimeSelection();
+        }
+    }
+
+    bool IsRobotWorkbenchContext()
+    {
+        return g_isRobotWorkbench.load();
+    }
+
+    // CommonLibF4's supported runtime profiles place this private event source
+    // at 0x60 and assert BGSInventoryInterface is 0xD0 bytes. Keep the one
+    // required private-base conversion in a single audited helper.
+    static constexpr std::uintptr_t kFavoriteChangedEventSourceOffset = 0x60;
+    static_assert(sizeof(RE::BGSInventoryInterface) == 0xD0);
+
+    void NotifyInventoryItemChanged(RE::BGSInventoryItem* a_item)
+    {
+        if (!a_item) return;
+
+        auto inventory = RE::BGSInventoryInterface::GetSingleton();
+        if (!inventory) return;
+
+        RE::InventoryInterface::FavoriteChangedEvent event;
+        event.itemAffected = a_item;
+        auto* eventSource = reinterpret_cast<RE::BSTEventSource<RE::InventoryInterface::FavoriteChangedEvent>*>(
+            reinterpret_cast<std::uintptr_t>(inventory) + kFavoriteChangedEventSourceOffset);
+        eventSource->Notify(event);
+    }
 
     static std::uint32_t GetInventoryStackCount(const RE::BGSInventoryItem& item);
 
@@ -59,6 +137,7 @@ namespace ConditionSystem::Workbench
         std::lock_guard<std::mutex> lock(s_costMutex);
         g_pendingCosts.clear();
         g_pendingKits.clear();
+        g_pendingRepairTarget = {};
     }
 
     static RE::BGSConstructibleObject* FindRecipeForCreatedItem(std::uint32_t a_formID)
@@ -70,6 +149,7 @@ namespace ConditionSystem::Workbench
 
     static bool IsWorkbenchRepairTargetSupported(RE::TESBoundObject* a_targetObj)
     {
+        if (IsRobotWorkbenchContext()) return false;
         if (!a_targetObj) return false;
         if (!a_targetObj->Is(RE::ENUM_FORM_ID::kWEAP) && !a_targetObj->Is(RE::ENUM_FORM_ID::kARMO)) return false;
 
@@ -176,6 +256,14 @@ namespace ConditionSystem::Workbench
         bool added = false;
         for (auto& scrap : examineMenu->scrappingArray) {
             if (scrap.first && scrap.second > 0) {
+                // ExamineMenu may return a loose MISC item (for example Cloth)
+                // instead of its CMPO component. Costs and inventory counting must
+                // use the component form so junk in the player's inventory is seen.
+                if (auto misc = scrap.first->As<RE::TESObjectMISC>();
+                    misc && AddMiscScrapComponents(a_materials, misc, static_cast<float>(scrap.second), false)) {
+                    added = true;
+                    continue;
+                }
                 a_materials[scrap.first] += static_cast<float>(scrap.second);
                 added = true;
             }
@@ -262,7 +350,7 @@ namespace ConditionSystem::Workbench
     std::vector<RepairMaterial> CalculateRepairCost(RE::TESBoundObject* a_weapon, RE::BGSInventoryItem::Stack* a_stack, float a_damagePercent) {
         std::vector<RepairMaterial> finalCost;
         std::unordered_map<RE::TESBoundObject*, float> rawMaterials;
-        if (!a_weapon) return finalCost;
+        if (IsRobotWorkbenchContext() || !a_weapon) return finalCost;
 
         InitializeRecipeCache();
         if (g_mcmSettings.repairMaterialMode.load() == 1) {
@@ -366,10 +454,11 @@ namespace ConditionSystem::Workbench
         if (typesToKeep > totalTypes) typesToKeep = totalTypes;
 
         float repairPenaltyMult = 1.2f;
+        float materialCostMultiplier = g_mcmSettings.repairMaterialCostMultiplier.load();
         for (size_t i = 0; i < typesToKeep; ++i) {
             auto componentForm = sortedMats[i].first;
             float baseCost = sortedMats[i].second;
-            std::uint32_t finalCount = static_cast<std::uint32_t>(std::ceil(baseCost * costDamagePercent * repairPenaltyMult));
+            std::uint32_t finalCount = static_cast<std::uint32_t>(std::ceil(baseCost * costDamagePercent * repairPenaltyMult * materialCostMultiplier));
 
             if (finalCount > 0 && componentForm) {
                 std::string compName = LOC("$CSF_UnknownComponent");
@@ -470,15 +559,10 @@ namespace ConditionSystem::Workbench
         return false;
     }
 
-    struct WorkbenchTarget
-    {
-        RE::TESBoundObject* object{ nullptr };
-        RE::BGSInventoryItem::Stack* stack{ nullptr };
-    };
-
     static WorkbenchTarget ResolveHoveredWorkbenchTarget(std::uint32_t a_expectedFormID = 0)
     {
         WorkbenchTarget result;
+        if (IsRobotWorkbenchContext()) return result;
         auto obj = g_hoveredObject.load();
         auto ghostStack = static_cast<RE::BGSInventoryItem::Stack*>(g_hoveredStack.load());
         if (!obj || !ghostStack) return result;
@@ -494,6 +578,7 @@ namespace ConditionSystem::Workbench
 
     static WorkbenchTarget ResolveWorkbenchTarget(std::uint32_t a_formID, bool a_isEquipped, std::uint32_t a_exactStackIndex, bool a_storeResolvedHover = true)
     {
+        if (IsRobotWorkbenchContext()) return {};
         auto player = RE::PlayerCharacter::GetSingleton();
         if (!player || !player->inventoryList) return {};
 
@@ -575,16 +660,10 @@ namespace ConditionSystem::Workbench
         return LOC("$CSF_UnnamedItem");
     }
 
-    static float GetTargetMaxDurability(RE::TESBoundObject* a_obj)
+    static float GetTargetMaxDurability(RE::TESBoundObject* a_obj, RE::BGSInventoryItem::Stack* a_stack = nullptr)
     {
-        if (!a_obj) return 0.0f;
-        if (auto weapon = a_obj->As<RE::TESObjectWEAP>()) {
-            return ConditionSystem::GetProfileForWeapon(weapon).maxDurability;
-        }
-        if (auto armor = a_obj->As<RE::TESObjectARMO>()) {
-            return ConditionSystem::GetProfileForArmor(armor).maxDurability;
-        }
-        return 0.0f;
+        return ConditionSystem::GetEffectiveMaxDurability(
+            a_obj, a_stack && a_stack->extra ? a_stack->extra.get() : nullptr);
     }
 
     static std::vector<WorkbenchRepairKitOption> BuildWorkbenchRepairKits(
@@ -593,6 +672,7 @@ namespace ConditionSystem::Workbench
         float a_currentPct,
         float a_playerLimit)
     {
+        (void)a_playerLimit;
         std::vector<WorkbenchRepairKitOption> result;
         if (!ConditionSystem::g_mcmSettings.enableRepairKits.load()) return result;
 
@@ -604,7 +684,7 @@ namespace ConditionSystem::Workbench
         const bool isArmor = a_targetObj->Is(RE::ENUM_FORM_ID::kARMO);
         if (!isWeapon && !isArmor) return result;
 
-        const float targetMax = GetTargetMaxDurability(a_targetObj);
+        const float targetMax = GetTargetMaxDurability(a_targetObj, a_targetStack);
         if (targetMax <= 0.0f) return result;
 
         std::uint16_t nextID = 1;
@@ -626,7 +706,7 @@ namespace ConditionSystem::Workbench
             }
             if (repairPct <= 0.0f) continue;
 
-            const float finalLimit = std::min(a_playerLimit, kitProfile.maxConditionLimit);
+            const float finalLimit = ConditionSystem::GetRepairKitLimit(kitProfile.maxConditionLimit);
             if (a_currentPct >= finalLimit - 0.001f) continue;
 
             WorkbenchRepairKitOption option;
@@ -669,20 +749,114 @@ namespace ConditionSystem::Workbench
 
     static void SendRepairKitButtonStateValues(bool a_enabled, std::uint32_t a_totalCount, bool a_supported = true)
     {
-        auto ui = RE::UI::GetSingleton();
-        auto menu = ui ? ui->GetMenu("ExamineMenu") : nullptr;
-        if (menu && menu->uiMovie) {
-            const bool materialSupported = a_supported && ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load();
-            const bool kitSupported = a_supported && ConditionSystem::g_mcmSettings.enableRepairKits.load();
+        if (!IsExamineMenuOpen()) return;
 
-            Scaleform::GFx::Value args[5];
-            args[0] = a_enabled && kitSupported;
-            args[1] = static_cast<double>(a_totalCount);
-            args[2] = a_supported;
-            args[3] = materialSupported;
-            args[4] = kitSupported;
-            menu->uiMovie->Invoke("root.SetRepairKitButtonState_Call", nullptr, args, 5);
+        const bool materialSupported = a_supported && ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load();
+        const bool kitSupported = a_supported && ConditionSystem::g_mcmSettings.enableRepairKits.load();
+
+        REX::INFO("[CSF-Workbench] Queueing repair-button state supported={} material={} kits={} enabled={} count={}",
+            a_supported ? 1 : 0, materialSupported ? 1 : 0, kitSupported ? 1 : 0,
+            (a_enabled && kitSupported) ? 1 : 0, a_totalCount);
+
+        {
+            std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+            g_pendingExamineMenuUpdate.hasButtonState = true;
+            g_pendingExamineMenuUpdate.buttonEnabled = a_enabled && kitSupported;
+            g_pendingExamineMenuUpdate.buttonCount = a_totalCount;
+            g_pendingExamineMenuUpdate.buttonSupported = a_supported;
+            g_pendingExamineMenuUpdate.generation = g_examineMenuGeneration.load(std::memory_order_acquire);
         }
+        ScheduleExamineMenuUpdate();
+    }
+
+    static void QueueRepairCostToUI(std::string a_costData)
+    {
+        if (!IsExamineMenuOpen()) return;
+
+        {
+            std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+            g_pendingExamineMenuUpdate.hasRepairCost = true;
+            g_pendingExamineMenuUpdate.repairCost = std::move(a_costData);
+            g_pendingExamineMenuUpdate.generation = g_examineMenuGeneration.load(std::memory_order_acquire);
+        }
+        ScheduleExamineMenuUpdate();
+    }
+
+    static void ProcessExamineMenuUpdate()
+    {
+        PendingExamineMenuUpdate update;
+        {
+            std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+            if (!g_pendingExamineMenuUpdate.hasButtonState && !g_pendingExamineMenuUpdate.hasRepairCost) {
+                g_examineMenuUpdateTaskQueued = false;
+                return;
+            }
+            update = std::move(g_pendingExamineMenuUpdate);
+            g_pendingExamineMenuUpdate = {};
+        }
+
+        const bool currentGeneration = IsExamineMenuOpen() &&
+            update.generation == g_examineMenuGeneration.load(std::memory_order_acquire);
+        if (currentGeneration) {
+            auto ui = RE::UI::GetSingleton();
+            auto menu = ui ? ui->GetMenu("ExamineMenu") : nullptr;
+            if (menu && menu->uiMovie) {
+                if (update.hasButtonState) {
+                    const bool materialSupported = update.buttonSupported && ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load();
+                    const bool kitSupported = update.buttonSupported && ConditionSystem::g_mcmSettings.enableRepairKits.load();
+                    Scaleform::GFx::Value args[5];
+                    args[0] = update.buttonEnabled && kitSupported;
+                    args[1] = static_cast<double>(update.buttonCount);
+                    args[2] = update.buttonSupported;
+                    args[3] = materialSupported;
+                    args[4] = kitSupported;
+                    menu->uiMovie->Invoke("root.SetRepairKitButtonState_Call", nullptr, args, 5);
+                }
+                if (update.hasRepairCost) {
+                    Scaleform::GFx::Value costArgs[1];
+                    costArgs[0] = update.repairCost.c_str();
+                    menu->uiMovie->Invoke("root.ShowRepairCost_Call", nullptr, costArgs, 1);
+                }
+            }
+        }
+
+        bool scheduleAgain = false;
+        {
+            std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+            scheduleAgain = g_pendingExamineMenuUpdate.hasButtonState || g_pendingExamineMenuUpdate.hasRepairCost;
+            if (!scheduleAgain) {
+                g_examineMenuUpdateTaskQueued = false;
+            }
+        }
+        if (scheduleAgain) {
+            {
+                std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+                g_examineMenuUpdateTaskQueued = false;
+            }
+            ScheduleExamineMenuUpdate();
+        }
+    }
+
+    static void ScheduleExamineMenuUpdate()
+    {
+        bool shouldQueue = false;
+        {
+            std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+            if (!g_examineMenuUpdateTaskQueued) {
+                g_examineMenuUpdateTaskQueued = true;
+                shouldQueue = true;
+            }
+        }
+        if (!shouldQueue) return;
+
+        auto task = F4SE::GetTaskInterface();
+        if (!task) {
+            std::lock_guard<std::mutex> lock(s_examineMenuUpdateMutex);
+            g_examineMenuUpdateTaskQueued = false;
+            REX::WARN("[CSF-Workbench] F4SE task interface unavailable; dropped ExamineMenu UI update.");
+            return;
+        }
+        task->AddTask([]() { ProcessExamineMenuUpdate(); });
     }
 
     static bool RefreshPendingWorkbenchRepairKits(std::uint32_t a_formID = 0, bool a_isEquipped = false, std::uint32_t a_exactStackIndex = 0)
@@ -701,14 +875,12 @@ namespace ConditionSystem::Workbench
         }
 
         float currentHealthPct = ConditionSystem::GetVisualDurabilityPercent(pObj, pRealStack);
-        float maxRepairLimit = ConditionSystem::GetPlayerOverRepairLimit(pObj, pRealStack->extra.get());
-        if (currentHealthPct >= maxRepairLimit - 0.001f) {
+        auto kits = BuildWorkbenchRepairKits(pObj, pRealStack, currentHealthPct, 0.0f);
+        if (kits.empty()) {
             std::lock_guard<std::mutex> lock(s_costMutex);
             g_pendingKits.clear();
             return false;
         }
-
-        auto kits = BuildWorkbenchRepairKits(pObj, pRealStack, currentHealthPct, maxRepairLimit);
         {
             std::lock_guard<std::mutex> lock(s_costMutex);
             g_pendingKits = std::move(kits);
@@ -718,6 +890,7 @@ namespace ConditionSystem::Workbench
 
     void SendRepairKitButtonStateToUI(std::uint32_t a_formID, bool a_isEquipped, std::uint32_t a_exactStackIndex)
     {
+        if (IsRobotWorkbenchContext()) return;
         (void)a_isEquipped;
         (void)a_exactStackIndex;
 
@@ -725,19 +898,26 @@ namespace ConditionSystem::Workbench
         std::uint32_t totalCount = 0;
 
         auto target = ResolveHoveredWorkbenchTarget(a_formID);
+        bool usedFallback = false;
+        if (!target.object || !target.stack) {
+            // IIF can expose the selected workbench item through the shared
+            // hover cache before the workbench-specific cache is populated.
+            // Use the same inventory fallback as the repair-cost path.
+            target = ResolveWorkbenchTarget(a_formID, a_isEquipped, a_exactStackIndex, false);
+            usedFallback = true;
+        }
         RE::TESBoundObject* pObj = target.object;
         RE::BGSInventoryItem::Stack* pRealStack = target.stack;
         const bool supported = pObj && pRealStack && IsWorkbenchRepairTargetSupported(pObj);
+        REX::INFO("[CSF-Workbench] Resolve repair-button target formID={:08X} fallback={} object={:08X} stack={} supported={}",
+            a_formID, usedFallback ? 1 : 0, pObj ? pObj->GetFormID() : 0, pRealStack ? 1 : 0, supported ? 1 : 0);
         if (supported) {
             totalCount = CountApplicableRepairKits(pObj);
 
             if (pRealStack && totalCount > 0) {
                 float currentHealthPct = ConditionSystem::GetVisualDurabilityPercent(pObj, pRealStack);
-                float maxRepairLimit = ConditionSystem::GetPlayerOverRepairLimit(pObj, pRealStack->extra.get());
-                if (currentHealthPct < maxRepairLimit - 0.001f) {
-                    auto kits = BuildWorkbenchRepairKits(pObj, pRealStack, currentHealthPct, maxRepairLimit);
-                    enabled = !kits.empty();
-                }
+                auto kits = BuildWorkbenchRepairKits(pObj, pRealStack, currentHealthPct, 0.0f);
+                enabled = !kits.empty();
             }
         }
 
@@ -745,11 +925,19 @@ namespace ConditionSystem::Workbench
     }
 
     void SendRepairCostToUI() {
+        if (IsRobotWorkbenchContext()) return;
         auto target = ResolveHoveredWorkbenchTarget();
         RE::TESBoundObject* pObj = target.object;
         RE::BGSInventoryItem::Stack* pRealStack = target.stack;
         if (!pObj || !pRealStack) {
+            {
+                std::lock_guard<std::mutex> lock(s_costMutex);
+                g_pendingCosts.clear();
+                g_pendingKits.clear();
+                g_pendingRepairTarget = {};
+            }
             SendRepairKitButtonStateValues(false, 0, false);
+            QueueRepairCostToUI("1.0;@@@");
             return;
         }
         if (!IsWorkbenchRepairTargetSupported(pObj)) {
@@ -757,77 +945,81 @@ namespace ConditionSystem::Workbench
                 std::lock_guard<std::mutex> lock(s_costMutex);
                 g_pendingCosts.clear();
                 g_pendingKits.clear();
+                g_pendingRepairTarget = {};
             }
-            auto ui = RE::UI::GetSingleton();
-            auto menu = ui ? ui->GetMenu("ExamineMenu") : nullptr;
-            if (menu && menu->uiMovie) {
-                SendRepairKitButtonStateValues(false, 0, false);
-                menu->uiMovie->Invoke("root.ShowRepairCost_Call", nullptr, "%s", "1.0;@@@");
-            }
+            SendRepairKitButtonStateValues(false, 0, false);
+            QueueRepairCostToUI("1.0;@@@");
             return;
         }
 
         float currentHealthPct = ConditionSystem::GetVisualDurabilityPercent(pObj, pRealStack);
-        float maxRepairLimit = ConditionSystem::GetPlayerOverRepairLimit(pObj, pRealStack->extra.get());
-        
-        auto ui = RE::UI::GetSingleton();
-        auto menu = ui ? ui->GetMenu("ExamineMenu") : nullptr;
-        if (!menu || !menu->uiMovie) return;
+        float maxRepairLimit = ConditionSystem::GetWorkbenchRepairLimit(pObj, pRealStack->extra.get());
+        if (!std::isfinite(currentHealthPct) || currentHealthPct < 0.0f) {
+            REX::WARN("[DEBUG-WB-b673] Invalid current condition for {:08X}: {}; using 1.0.", pObj->GetFormID(), currentHealthPct);
+            currentHealthPct = 1.0f;
+        }
+        if (!std::isfinite(maxRepairLimit) || maxRepairLimit < 0.0f) {
+            REX::WARN("[DEBUG-WB-b673] Invalid repair limit for {:08X}: {}; using 1.0.", pObj->GetFormID(), maxRepairLimit);
+            maxRepairLimit = 1.0f;
+        }
 
         std::string materialData;
         std::string kitData;
         bool repairKitButtonEnabled = false;
         std::uint32_t repairKitButtonCount = CountApplicableRepairKits(pObj);
 
-        if (currentHealthPct < maxRepairLimit - 0.001f) {
-            float damagePct = maxRepairLimit - currentHealthPct;
-            std::vector<RepairMaterial> pendingCopy;
-            {
-                std::lock_guard<std::mutex> lock(s_costMutex);
-                g_pendingCosts = ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load() ? CalculateRepairCost(pObj, pRealStack, damagePct) : std::vector<RepairMaterial>();
-                g_pendingKits = BuildWorkbenchRepairKits(pObj, pRealStack, currentHealthPct, maxRepairLimit);
-                pendingCopy = g_pendingCosts;  // 🐛 拷贝到局部变量，缩短锁持有时间
-            }
-            
-            auto favMgr = RE::FavoritesManager::GetSingleton();
-
-            for (size_t i = 0; i < pendingCopy.size(); i++) {
-                auto& mat = pendingCopy[i];
-                std::uint32_t playerHas = GetPlayerMaterialCount(mat.componentForm);
-                std::uint32_t req = mat.requiredCount;
-                
-                bool isTagged = false;
-                if (favMgr && mat.componentForm) {
-                    auto it = favMgr->favoritedComponents.find(mat.componentForm);
-                    isTagged = (it != favMgr->favoritedComponents.end());
-                }
-
-                materialData += mat.componentName + "|" + std::to_string(playerHas) + "|" + std::to_string(req) + "|" + (isTagged ? "1" : "0");
-                if (i < pendingCopy.size() - 1) materialData += ",";
-            }
-
-            std::vector<WorkbenchRepairKitOption> kitCopy;
-            {
-                std::lock_guard<std::mutex> lock(s_costMutex);
-                kitCopy = g_pendingKits;
-            }
-            repairKitButtonEnabled = !kitCopy.empty();
-            for (size_t i = 0; i < kitCopy.size(); i++) {
-                const auto& kit = kitCopy[i];
-                kitData += std::to_string(kit.id) + "|" + kit.displayName + "|" + std::to_string(kit.count) + "|" +
-                    std::to_string(kit.repairPct) + "|" + std::to_string(kit.maxLimit);
-                if (i < kitCopy.size() - 1) kitData += ",";
-            }
-        } else {
+        {
             std::lock_guard<std::mutex> lock(s_costMutex);
-            g_pendingCosts.clear();
-            g_pendingKits.clear();
+            // Confirm callbacks run after Scaleform has had time to update its
+            // hover state. Bind costs, kits, and execution to this exact stack.
+            g_pendingRepairTarget = target;
+            if (currentHealthPct < maxRepairLimit - 0.001f && ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load()) {
+                float damagePct = maxRepairLimit - currentHealthPct;
+                g_pendingCosts = CalculateRepairCost(pObj, pRealStack, damagePct);
+            } else {
+                g_pendingCosts.clear();
+            }
+            g_pendingKits = BuildWorkbenchRepairKits(pObj, pRealStack, currentHealthPct, 0.0f);
+        }
+
+        std::vector<RepairMaterial> pendingCopy;
+        std::vector<WorkbenchRepairKitOption> kitCopy;
+        {
+            std::lock_guard<std::mutex> lock(s_costMutex);
+            pendingCopy = g_pendingCosts;
+            kitCopy = g_pendingKits;
+        }
+
+        auto favMgr = RE::FavoritesManager::GetSingleton();
+        for (size_t i = 0; i < pendingCopy.size(); i++) {
+            auto& mat = pendingCopy[i];
+            std::uint32_t playerHas = GetPlayerMaterialCount(mat.componentForm);
+            std::uint32_t req = mat.requiredCount;
+
+            bool isTagged = false;
+            if (favMgr && mat.componentForm) {
+                auto it = favMgr->favoritedComponents.find(mat.componentForm);
+                isTagged = (it != favMgr->favoritedComponents.end());
+            }
+
+            materialData += mat.componentName + "|" + std::to_string(playerHas) + "|" + std::to_string(req) + "|" + (isTagged ? "1" : "0");
+            if (i < pendingCopy.size() - 1) materialData += ",";
+        }
+
+        repairKitButtonEnabled = !kitCopy.empty();
+        for (size_t i = 0; i < kitCopy.size(); i++) {
+            const auto& kit = kitCopy[i];
+            kitData += std::to_string(kit.id) + "|" + kit.displayName + "|" + std::to_string(kit.count) + "|" +
+                std::to_string(kit.repairPct) + "|" + std::to_string(kit.maxLimit);
+            if (i < kitCopy.size() - 1) kitData += ",";
         }
 
         std::string costData = std::to_string(maxRepairLimit) + ";" + materialData + "@@@" + kitData;
-        
+
+        REX::INFO("[DEBUG-WB-b673] SendRepairCost form={:08X} health={} limit={} payload='{}'",
+            pObj->GetFormID(), currentHealthPct, maxRepairLimit, costData);
         SendRepairKitButtonStateValues(repairKitButtonEnabled, repairKitButtonCount);
-        menu->uiMovie->Invoke("root.ShowRepairCost_Call", nullptr, "%s", costData.c_str());
+        QueueRepairCostToUI(std::move(costData));
     }
 
     static std::uint32_t GetInventoryStackCount(const RE::BGSInventoryItem& item) {
@@ -960,22 +1152,28 @@ namespace ConditionSystem::Workbench
     }
 
     void ExecuteWorkbenchRepairFromUI() {
+        if (IsRobotWorkbenchContext()) return;
         if (!ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load()) return;
 
         auto player = RE::PlayerCharacter::GetSingleton();
         if (!player || !player->inventoryList) return;
 
-        RE::TESBoundObject* pObj = g_hoveredObject.load();
-        RE::BGSInventoryItem::Stack* pGhostStack = static_cast<RE::BGSInventoryItem::Stack*>(g_hoveredStack.load());
-        if (!pObj || !pGhostStack) return;
-        RE::BGSInventoryItem::Stack* pRealStack = GetRealStack(pObj, pGhostStack);
+        WorkbenchTarget target;
+        {
+            std::lock_guard<std::mutex> lock(s_costMutex);
+            target = g_pendingRepairTarget;
+        }
+
+        RE::TESBoundObject* pObj = target.object;
+        if (!pObj || !target.stack || !IsWorkbenchRepairTargetSupported(pObj)) return;
+        RE::BGSInventoryItem::Stack* pRealStack = GetRealStack(pObj, target.stack);
         if (!pRealStack) return;
 
         float currentHealthPct = ConditionSystem::GetVisualDurabilityPercent(pObj, pRealStack);
-        float maxRepairLimit = ConditionSystem::GetPlayerOverRepairLimit(pObj, pRealStack->extra.get());
+        float maxRepairLimit = ConditionSystem::GetWorkbenchRepairLimit(pObj, pRealStack->extra.get());
 
         if (currentHealthPct >= maxRepairLimit - 0.001f) {
-            RE::SendHUDMessage::ShowHUDMessage("$CSF_RepairMaxLimit", "UIActionDeny", true, true);
+            RE::SendHUDMessage::ShowHUDMessage(GetGameSettingText("sNoNeedToRepairMessage", "$CSF_RepairMaxLimit"), "UIActionDeny", true, true);
             return;
         }
 
@@ -993,7 +1191,7 @@ namespace ConditionSystem::Workbench
             }
 
             if (needed > 0) {
-                RE::SendHUDMessage::ShowHUDMessage("$CSF_RepairNoMaterials", "UIActionDeny", true, true);
+                RE::SendHUDMessage::ShowHUDMessage(GetGameSettingText("sCannotBuildMessage", "$CSF_RepairNoMaterials"), "UIActionDeny", true, true);
                 return;
             }
         }
@@ -1018,7 +1216,7 @@ namespace ConditionSystem::Workbench
             }
 
             if (needed > 0) {
-                RE::SendHUDMessage::ShowHUDMessage("$CSF_RepairNoMaterials", "UIActionDeny", true, true);
+                RE::SendHUDMessage::ShowHUDMessage(GetGameSettingText("sCannotBuildMessage", "$CSF_RepairNoMaterials"), "UIActionDeny", true, true);
                 return;
             }
         }
@@ -1026,25 +1224,17 @@ namespace ConditionSystem::Workbench
         if (!pRealStack->extra) pRealStack->extra = RE::BSTSmartPointer<RE::ExtraDataList>(new RE::ExtraDataList());
         pRealStack->extra->SetHealthPerc(ConditionSystem::GetCompressedPct(pObj, maxRepairLimit));
 
-        if (pGhostStack != pRealStack && pGhostStack->extra) {
-            pGhostStack->extra->SetHealthPerc(ConditionSystem::GetCompressedPct(pObj, maxRepairLimit));
+        {
+            std::lock_guard<std::mutex> lock(s_costMutex);
+            g_pendingCosts.clear();
+            g_pendingKits.clear();
+            g_pendingRepairTarget = {};
         }
 
-        std::lock_guard<std::mutex> lock(s_costMutex);
-        g_pendingCosts.clear();
-        g_pendingKits.clear();
-
-        auto inv = RE::BGSInventoryInterface::GetSingleton();
-        if (inv) {
-            for (auto& item : player->inventoryList->data) {
-                if (item.object == pObj) {
-                    RE::InventoryInterface::FavoriteChangedEvent ev; ev.itemAffected = &item;
-                    // BGSInventoryInterface privately inherits BSTEventSource<FavoriteChangedEvent> at offset 0x60.
-                    // Verified by: static_assert(sizeof(BGSInventoryInterface) == 0xD0).
-                    auto evSource = reinterpret_cast<RE::BSTEventSource<RE::InventoryInterface::FavoriteChangedEvent>*>(reinterpret_cast<uintptr_t>(inv) + 0x60);
-                    if (evSource) evSource->Notify(ev);
-                    break;
-                }
+        for (auto& item : player->inventoryList->data) {
+            if (item.object == pObj) {
+                NotifyInventoryItemChanged(&item);
+                break;
             }
         }
         
@@ -1061,27 +1251,28 @@ namespace ConditionSystem::Workbench
 
     void ExecuteWorkbenchRepairKitFromUI(std::uint16_t a_kitID)
     {
+        if (IsRobotWorkbenchContext()) return;
         if (!ConditionSystem::g_mcmSettings.enableRepairKits.load()) return;
 
         auto player = RE::PlayerCharacter::GetSingleton();
         if (!player || !player->inventoryList || a_kitID == 0) return;
 
-        RE::TESBoundObject* pObj = g_hoveredObject.load();
-        RE::BGSInventoryItem::Stack* pGhostStack = static_cast<RE::BGSInventoryItem::Stack*>(g_hoveredStack.load());
-        if (!pObj || !pGhostStack) return;
-
-        RE::BGSInventoryItem::Stack* pRealStack = GetRealStack(pObj, pGhostStack);
-        if (!pRealStack) return;
-
+        WorkbenchTarget target;
         WorkbenchRepairKitOption kitOption;
         {
             std::lock_guard<std::mutex> lock(s_costMutex);
+            target = g_pendingRepairTarget;
             auto it = std::find_if(g_pendingKits.begin(), g_pendingKits.end(), [a_kitID](const auto& option) {
                 return option.id == a_kitID;
             });
             if (it == g_pendingKits.end()) return;
             kitOption = *it;
         }
+
+        RE::TESBoundObject* pObj = target.object;
+        if (!pObj || !target.stack || !IsWorkbenchRepairTargetSupported(pObj)) return;
+        RE::BGSInventoryItem::Stack* pRealStack = GetRealStack(pObj, target.stack);
+        if (!pRealStack) return;
 
         if (!kitOption.kitForm) return;
 
@@ -1098,14 +1289,13 @@ namespace ConditionSystem::Workbench
         }
 
         float currentHealthPct = ConditionSystem::GetVisualDurabilityPercent(pObj, pRealStack);
-        float playerLimit = ConditionSystem::GetPlayerOverRepairLimit(pObj, pRealStack->extra.get());
-        float finalLimit = std::min(playerLimit, kitOption.maxLimit);
+        float finalLimit = ConditionSystem::GetRepairKitLimit(kitOption.maxLimit);
         if (currentHealthPct >= finalLimit - 0.001f) {
-            RE::SendHUDMessage::ShowHUDMessage("$CSF_RepairMaxLimit", "UIActionDeny", true, true);
+            RE::SendHUDMessage::ShowHUDMessage(GetGameSettingText("sNoNeedToRepairMessage", "$CSF_RepairMaxLimit"), "UIActionDeny", true, true);
             return;
         }
 
-        float targetMax = GetTargetMaxDurability(pObj);
+        float targetMax = GetTargetMaxDurability(pObj, pRealStack);
         float newTotal = std::min(finalLimit, currentHealthPct + kitOption.repairPct);
         float alignedPercent = newTotal;
         if (targetMax > 0.0f) {
@@ -1116,10 +1306,6 @@ namespace ConditionSystem::Workbench
         if (!pRealStack->extra) pRealStack->extra = RE::BSTSmartPointer<RE::ExtraDataList>(new RE::ExtraDataList());
         pRealStack->extra->SetHealthPerc(ConditionSystem::GetCompressedPct(pObj, alignedPercent));
 
-        if (pGhostStack != pRealStack && pGhostStack->extra) {
-            pGhostStack->extra->SetHealthPerc(ConditionSystem::GetCompressedPct(pObj, alignedPercent));
-        }
-
         RE::TESObjectREFR::RemoveItemData rmData(kitOption.kitForm, 1);
         player->RemoveItem(rmData);
 
@@ -1127,17 +1313,13 @@ namespace ConditionSystem::Workbench
             std::lock_guard<std::mutex> lock(s_costMutex);
             g_pendingCosts.clear();
             g_pendingKits.clear();
+            g_pendingRepairTarget = {};
         }
 
-        auto inv = RE::BGSInventoryInterface::GetSingleton();
-        if (inv) {
-            for (auto& item : player->inventoryList->data) {
-                if (item.object == pObj) {
-                    RE::InventoryInterface::FavoriteChangedEvent ev; ev.itemAffected = &item;
-                    auto evSource = reinterpret_cast<RE::BSTEventSource<RE::InventoryInterface::FavoriteChangedEvent>*>(reinterpret_cast<uintptr_t>(inv) + 0x60);
-                    if (evSource) evSource->Notify(ev);
-                    break;
-                }
+        for (auto& item : player->inventoryList->data) {
+            if (item.object == pObj) {
+                NotifyInventoryItemChanged(&item);
+                break;
             }
         }
 
@@ -1162,6 +1344,7 @@ namespace ConditionSystem::Workbench
     };
 
     void ShowRepairConfirmBox() {
+        if (IsRobotWorkbenchContext()) return;
         if (!ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load()) return;
 
         std::string bodyText = LOC("$REPAIR WITH") + "\n\n";
@@ -1197,6 +1380,7 @@ namespace ConditionSystem::Workbench
 
     void ShowRepairKitConfirmBox(std::uint16_t a_kitID)
     {
+        if (IsRobotWorkbenchContext()) return;
         if (!ConditionSystem::g_mcmSettings.enableRepairKits.load()) return;
 
         WorkbenchRepairKitOption kitOption;
@@ -1257,6 +1441,7 @@ namespace ConditionSystem::Workbench
 
     void ShowRepairKitListBox(std::uint16_t a_page, std::uint32_t a_formID, bool a_isEquipped, std::uint32_t a_exactStackIndex)
     {
+        if (IsRobotWorkbenchContext()) return;
         if (!ConditionSystem::g_mcmSettings.enableRepairKits.load()) {
             RE::SendHUDMessage::ShowHUDMessage("$CSF_NoRepairToolsAvailable", "UIActionDeny", true, true);
             return;
@@ -1312,6 +1497,7 @@ namespace ConditionSystem::Workbench
     }
 
     void ToggleRepairComponentsTag() {
+        if (IsRobotWorkbenchContext()) return;
         if (!ConditionSystem::g_mcmSettings.enableWorkbenchMaterialRepair.load()) return;
 
         auto favMgr = RE::FavoritesManager::GetSingleton();

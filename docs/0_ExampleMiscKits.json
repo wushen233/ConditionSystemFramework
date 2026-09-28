@@ -1,4 +1,7 @@
 {
+  // maxConditionLimit 是修理套件自己的方法上限，与玩家过量修理技能分开计算。
+  // maxConditionLimit is the kit's own method cap and is calculated separately from player over-repair skill.
+  // Install this file under Repair/RepairKits/.
   "profiles": [
     // =========================================================================
     // 杂项（kMISC）类型修理工具  /  MISC-Type Repair Kits
@@ -53,15 +56,9 @@
     // =========================================================================
     // 加载顺序  /  Load Order
     // =========================================================================
-    // 多个修理包 JSON 文件按文件名字典序加载。相同 FormID 的重复配置会追加，
-    // 匹配时取第一个匹配项。
-    // Multiple RepairKits JSON files are loaded in filename lexicographic order.
-    // Duplicate FormIDs across files are appended; the first match wins.
-    //
-    // 建议使用数字前缀控制加载顺序 / Recommended prefix scheme:
-    //   0_DefaultKits.json   -> 核心配置 / Core configs
-    //   1_MyCustomKits.json  -> 自定义扩展 / Custom extensions
-    //   2_AnotherMod.json    -> 第三方兼容 / Third-party compatibility
+    // 同一 FormID 或关键词重复匹配时，结果取实际目录遍历遇到的第一个 Profile。
+    // When a FormID or keyword matches multiple profiles, the first profile encountered
+    // by the runtime directory scan is returned. Avoid duplicate matches.
     // =========================================================================
 
     // =========================================================================

@@ -1,0 +1,29 @@
+{
+  /*
+   * 分类 Provider 的加载与冲突排序策略。
+   *
+   * 分类与修理技能 Provider 不同：所有 requires 均满足的分类 Provider
+   * 都会加载并虚拟合并。此处的 mode 只决定不同 Provider 对同一互斥
+   * 维度给出不同结果时，先比较 JSON 优先级还是插件加载顺序。
+   *
+   * JsonPriorityFirst：
+   *   1. ProviderPriority
+   *   2. requires 中加载顺序最靠后的插件
+   *   3. Provider JSON 文件名
+   *
+   * PluginLoadOrderFirst：
+   *   1. requires 中加载顺序最靠后的插件
+   *   2. ProviderPriority
+   *   3. Provider JSON 文件名
+   */
+  "schemaVersion": 1,
+  "module": "Classifications.ProviderSelection",
+  "loading": {
+    "mode": "AllRequirementsSatisfied",
+    "missingRequirement": "SkipProvider"
+  },
+  "conflictResolution": {
+    "mode": "JsonPriorityFirst",
+    "finalTieBreak": "ProviderFileName"
+  }
+}

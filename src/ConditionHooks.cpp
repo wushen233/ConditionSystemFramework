@@ -39,6 +39,23 @@ namespace ConditionSystem::Hooks
 {
     using namespace RE;
 
+    namespace {
+        bool IsManagedWeaponCached(RE::TESObjectWEAP* a_weapon)
+        {
+            static std::atomic<RE::TESObjectWEAP*> s_cachedWeapon{ nullptr };
+            static std::atomic<bool> s_cachedManaged{ false };
+
+            if (s_cachedWeapon.load(std::memory_order_acquire) == a_weapon) {
+                return s_cachedManaged.load(std::memory_order_acquire);
+            }
+
+            const bool managed = ConditionSystem::GetItemFlagsRaw(a_weapon).enableDurabilitySystem;
+            s_cachedManaged.store(managed, std::memory_order_release);
+            s_cachedWeapon.store(a_weapon, std::memory_order_release);
+            return managed;
+        }
+    }
+
     using EventFunc_t = void(*)(RE::BSInputEventReceiver*, const RE::InputEvent*);
     static EventFunc_t _PerformInputProcessing_Original = nullptr;
 
@@ -93,7 +110,11 @@ namespace ConditionSystem::Hooks
                             }
                         }
                         else {
-                            RE::SendHUDMessage::ShowHUDMessage("$CSF_ToolRepairNotNeeded", nullptr, true, true);
+                            RE::SendHUDMessage::ShowHUDMessage(
+                                ConditionSystem::GetGameSettingText("sNoNeedToRepairMessage", "$CSF_ToolRepairNotNeeded"),
+                                nullptr,
+                                true,
+                                true);
                         }
 
                         return true;  // 跳过原始 EquipObject，阻止 "无法装备" 提示
@@ -105,6 +126,7 @@ namespace ConditionSystem::Hooks
     }
 
     static RE::BSTSmartPointer<RE::BSInputEnableLayer> g_jamVatsLayer;
+    static float GetConditionValueMultiplier(float a_durability);
 
     // =========================================================================
     // 现代事件驱动优化：取代老旧高频输入线程里的 ExamineMenu 轮询
@@ -116,13 +138,16 @@ namespace ConditionSystem::Hooks
 
         RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override {
             if (a_event.menuName == "ExamineMenu") {
+                ConditionSystem::Workbench::SetExamineMenuOpen(a_event.opening);
                 ConditionSystem::Workbench::ClearRuntimeSelection();
+                ConditionSystem::Workbench::SetRobotWorkbenchContext(false);
             }
             if (a_event.menuName == "ExamineMenu" && a_event.opening) {
                 auto ui = RE::UI::GetSingleton();
                 auto menu = ui ? ui->GetMenu("ExamineMenu") : nullptr;
                 if (menu && menu->uiMovie) {
                     ConditionSystem::Repair::InjectConditionSystemCallback(menu->uiMovie.get());
+                    ConditionSystem::Repair::RefreshExamineMenuButtons(menu->uiMovie.get());
                 }
             }
             return RE::BSEventNotifyControl::kContinue;
@@ -133,8 +158,10 @@ namespace ConditionSystem::Hooks
     // 核心输入顶级拦截（保留卡壳、排障与拔枪状态硬控制）
     // =========================================================================
     static void PerformInputProcessing_Hook(RE::BSInputEventReceiver* a_this, const RE::InputEvent* a_queueHead) {
+        ConditionSystem::UpdateEnergyFault();
+        ConditionSystem::UpdateWeaponHeat();
         // 1. VATS 限制层动态管理
-        if (ConditionSystem::g_isWeaponJammed.load()) {
+        if (ConditionSystem::IsCurrentWeaponJammed()) {
             if (!g_jamVatsLayer) {
                 auto inputMgr = RE::BSInputEnableManager::GetSingleton();
                 if (inputMgr) {
@@ -189,14 +216,22 @@ namespace ConditionSystem::Hooks
                             }
 
                             // 卡壳阻止 VATS
-                            if (userEvent == "VATS" && ConditionSystem::g_isWeaponJammed.load()) {
+                            if (userEvent == "VATS" && (ConditionSystem::IsCurrentWeaponJammed() || ConditionSystem::IsCurrentWeaponEnergyFault())) {
                                 if (buttonEvent->value > 0.0f && buttonEvent->heldDownSecs == 0.0f) {
-                                    RE::SendHUDMessage::ShowHUDMessage("$CSF_VATSJamMessage", "UIActionDeny", true, true);
+                                    RE::SendHUDMessage::ShowHUDMessage(
+                                        ConditionSystem::IsCurrentWeaponEnergyFault()
+                                            ? "$CSF_EnergyFault"
+                                            : "$CSF_VATSJamMessage",
+                                        "UIActionDeny", true, true);
                                 }
                             }
 
                             // ✅ 核心修改：排障逻辑 (彻底删除了 weaponIdle，恢复无缝静默拦截)
-                            if (userEvent == "PrimaryAttack" && ConditionSystem::g_isWeaponJammed.load()) {
+                            if (userEvent == "PrimaryAttack" && ConditionSystem::IsCurrentWeaponEnergyFault()) {
+                                buttonEvent->value = 0.0f;
+                                continue;
+                            }
+                            if (userEvent == "PrimaryAttack" && ConditionSystem::IsCurrentWeaponJammed()) {
                                 if (buttonEvent->heldDownSecs == 0.0f && !ConditionSystem::g_isUnjamming.load()) {
 
                                     if (ConditionSystem::g_mcmSettings.enableLogging.load()) {
@@ -205,10 +240,12 @@ namespace ConditionSystem::Hooks
 
                                     if (ConditionSystem::g_mcmSettings.quickUnjam.load()) {
                                         // 快速排障逻辑
-                                        ConditionSystem::g_isWeaponJammed.store(false);
-                                        ConditionSystem::g_jammedWeaponUniqueID.store(0);
+                                        const bool energyFault = ConditionSystem::IsCurrentWeaponEnergyFault();
+                                        ConditionSystem::ClearCurrentWeaponFault();
                                         ConditionSystem::ConditionUI::ShowUnjammingUI(false);
-                                        RE::SendHUDMessage::ShowHUDMessage("$CSF_QuickUnjamSuccess", "WPNPistol10mmFireDry", true, true);
+                                        RE::SendHUDMessage::ShowHUDMessage(
+                                            energyFault ? "$CSF_EnergyUnjamSuccess" : "$CSF_QuickUnjamSuccess",
+                                            "WPNPistol10mmFireDry", true, true);
                                     }
                                     else {
                                         // 完整排障逻辑 (调用外部统一接口)
@@ -277,6 +314,7 @@ namespace ConditionSystem::Hooks
     // =========================================================================
     void OnIIFMessage_CND(IIF_API::UpdateMessage* msg) {
         if (!msg || !msg->inventoryItem) return;
+        if (ConditionSystem::Workbench::IsRobotWorkbenchContext()) return;
 
         auto a_item = static_cast<RE::BGSInventoryItem*>(msg->inventoryItem);
         if (!a_item || !a_item->object) return;
@@ -302,7 +340,15 @@ namespace ConditionSystem::Hooks
             }
         }
 
-        if (!isRepairable) return;
+        if (!isRepairable) {
+            // The workbench receives IIF selection updates for every apparel
+            // entry.  Clear its cached target before returning so an excluded
+            // item (notably the Pip-Boy) can never execute a repair on the
+            // previously selected weapon or armor.
+            ConditionSystem::Workbench::ClearRuntimeSelection();
+            ConditionSystem::Workbench::SendRepairCostToUI();
+            return;
+        }
 
         RE::BGSInventoryItem::Stack* currentStack = nullptr;
         if (msg->movie) {
@@ -332,12 +378,19 @@ namespace ConditionSystem::Hooks
 
         bool isArmor = a_item->object->Is(RE::ENUM_FORM_ID::kARMO);
         bool isWeapon = a_item->object->Is(RE::ENUM_FORM_ID::kWEAP);
-        bool weaponDamageAffected = ConditionSystem::g_mcmSettings.weaponConditionAffectsDamage.load();
-        bool weaponValueAffected = ConditionSystem::g_mcmSettings.weaponConditionAffectsValue.load();
-        bool armorResistanceAffected = ConditionSystem::g_mcmSettings.armorConditionAffectsResistance.load();
-        bool armorValueAffected = ConditionSystem::g_mcmSettings.armorConditionAffectsValue.load();
+        bool weaponDamageAffected =
+            ConditionSystem::g_mcmSettings.enableWeaponCondition.load() &&
+            ConditionSystem::g_mcmSettings.weaponConditionAffectsDamage.load();
+        bool armorResistanceAffected =
+            ConditionSystem::g_mcmSettings.enableArmorCondition.load() &&
+            ConditionSystem::g_mcmSettings.armorConditionAffectsResistance.load();
         bool isWeapOrArmo = isWeapon || isArmor;
-        if (isWeapOrArmo) {
+        const bool playerOwnedStack = currentStack && ConditionSystem::IsStackInPlayerInventory(currentStack);
+        // Workbench IIF entries can be temporary/ghost stacks rather than the
+        // exact stack in the player's inventory. Cache the selected object and
+        // stack first; the workbench resolver maps it back with GetRealStack().
+        // Keep playerOwnedStack for the separate Pip-Boy repair-button gate.
+        if (isWeapOrArmo && currentStack) {
             ConditionSystem::Workbench::g_hoveredObject.store(a_item->object);
             ConditionSystem::Workbench::g_hoveredStack.store(static_cast<void*>(currentStack));
             if (currentStack) {
@@ -355,6 +408,9 @@ namespace ConditionSystem::Hooks
                 }
             }
         }
+        else if (isWeapOrArmo) {
+            ConditionSystem::Workbench::ClearRuntimeSelection();
+        }
 
         if (currentStack && ConditionSystem::GetItemFlags(a_item->object).enableDurabilitySystem) {
             auto healthExtra = currentStack->extra ? currentStack->extra->GetByType<RE::ExtraHealth>() : nullptr;
@@ -368,16 +424,17 @@ namespace ConditionSystem::Hooks
             bool needsRepair = false;
             if (currentStack && currentStack->extra) {
                 float currentPct = ConditionSystem::GetVisualDurabilityPercent(a_item->object, currentStack);
-                float repairLimit = ConditionSystem::GetPlayerOverRepairLimit(a_item->object, currentStack->extra.get());
+                float repairLimit = ConditionSystem::GetJuryRepairLimit(a_item->object, currentStack->extra.get());
                 needsRepair = currentPct < repairLimit - 0.001f;
             }
 
             Scaleform::GFx::Value repairArgs[2];
-            repairArgs[0] = isRepairable && ConditionSystem::g_mcmSettings.enablePipboyJuryRepair.load();
+            repairArgs[0] = isRepairable && playerOwnedStack && ConditionSystem::g_mcmSettings.enablePipboyJuryRepair.load();
             repairArgs[1] = needsRepair;
             movie->Invoke("root.SetRepairButtonEnabled_Call", nullptr, repairArgs, 2);
         }
 
+        auto cndFlags = ConditionSystem::GetItemFlags(a_item->object);
         bool showCndCard = ConditionSystem::g_mcmSettings.showItemCardCND.load() && msg->gfxArray;
         if (!showCndCard && !msg->modifyCard) return;
 
@@ -423,7 +480,6 @@ namespace ConditionSystem::Hooks
             // 动力甲甲片(vanilla 耐久) 和融合核心(充能) 不应显示
             card.thresholdPct = -1.0f;
             card.thresholdPct2 = -1.0f;
-            auto cndFlags = ConditionSystem::GetItemFlags(a_item->object);
             if (cndFlags.enableDurabilitySystem) {
                 if (isArmor && armorResistanceAffected) {
                     card.thresholdPct = 0.5f; // 护甲抗性衰减门槛 (硬编码)
@@ -435,35 +491,12 @@ namespace ConditionSystem::Hooks
             msg->addCard(msg->context, &card);
         }
 
-        // ========================================================
-        // Apply the display-value adjustment only in the IIF panel context.
-        // ========================================================
         if (msg->modifyCard) {
-            if (isArmor || isWeapon) {
-                
-                // 核心侦测：判断当前处于什么 UI 环境
-                auto ui = RE::UI::GetSingleton();
-                bool inPipboy = ui && ui->GetMenuOpen("PipboyMenu");
-                bool inExamine = ui && ui->GetMenuOpen("ExamineMenu");
-                bool inBarter = ui && ui->GetMenuOpen("BarterMenu");
-                bool inContainer = ui && ui->GetMenuOpen("ContainerMenu");
-
-                // 价值同步：只有在纯粹的 Pip-Boy 列表里，我们才手动打折（因为 Pipboy 读的是死缓存）。
-                // 一旦进入检视、交易、容器，底层 MinHook 已经算好了精确价格，我们绝不二次打折！
-                bool valueAffected = (isWeapon && weaponValueAffected) || (isArmor && armorValueAffected);
-                if (valueAffected && inPipboy && !inExamine && !inBarter && !inContainer) {
-                    double valMult = static_cast<double>(durabilityPercent);
-                    
-                    // FO76 过量维修红利联动：涨价 (最高涨20%)
-                    if (durabilityPercent > 1.0f) {
-                        valMult = 1.0 + 0.2 * (static_cast<double>(durabilityPercent) - 1.0);
-                    }
-                    
-                    msg->modifyCard(msg->context, "$val", valMult);
-                }
-
+            if (cndFlags.enableDurabilitySystem && (isArmor || isWeapon)) {
                 // ----------------------------------------------------
-                // 下面是你已经恢复的护甲($dr)和武器($dmg)显示打折...
+                // The exact ExtraDataList value hook now covers every inventory
+                // context, including Pip-Boy. Do not apply a second card-layer
+                // value multiplier here.
                 // ----------------------------------------------------
                 if (isArmor && armorResistanceAffected && durabilityPercent < 0.5f) {
                     double penaltyMult = static_cast<double>(durabilityPercent * 2.0f);
@@ -501,24 +534,40 @@ namespace ConditionSystem::Hooks
     // =========================================================================
     // Adjust Pip-Boy value display and Fallout 76-style over-repair pricing.
     // =========================================================================
-    using GetInventoryValue_t = std::int32_t(*)(const RE::BGSInventoryItem*, std::uint32_t, bool);
+    // This utility receives the concrete ExtraDataList, unlike the item wrapper
+    // whose callers can omit the stack index in Pip-Boy paths.
+    using GetInventoryValue_t = std::int64_t(*)(RE::TESBoundObject*, const RE::ExtraDataList*);
     static GetInventoryValue_t _GetInventoryValue_Original = nullptr;
 
-    std::int32_t GetInventoryValue_Hook(const RE::BGSInventoryItem* a_this, std::uint32_t a_stackID, bool a_scale) {
-        std::int32_t originalValue = _GetInventoryValue_Original(a_this, a_stackID, a_scale);
-        if (!a_this || !a_this->object) return originalValue;
+    static float GetConditionValueMultiplier(float a_durability)
+    {
+        if (a_durability <= 1.0f) {
+            return (std::max)(a_durability, 0.0f);
+        }
 
-        bool isWeapon = a_this->object->Is(RE::ENUM_FORM_ID::kWEAP);
-        bool isArmor = a_this->object->Is(RE::ENUM_FORM_ID::kARMO);
+        // Over-repair value bonuses cap at +20%, matching the Pip-Boy card.
+        return 1.0f + 0.2f * (std::min)(a_durability - 1.0f, 1.0f);
+    }
+
+    std::int64_t GetInventoryValue_Hook(RE::TESBoundObject* a_object, const RE::ExtraDataList* a_extra) {
+        std::int64_t originalValue = _GetInventoryValue_Original(a_object, a_extra);
+        if (!a_object || !a_extra) return originalValue;
+
+        bool isWeapon = a_object->Is(RE::ENUM_FORM_ID::kWEAP);
+        bool isArmor = a_object->Is(RE::ENUM_FORM_ID::kARMO);
+        if (!ConditionSystem::GetItemFlags(a_object).enableDurabilitySystem) return originalValue;
+
         bool valueAffected =
-            (isWeapon && ConditionSystem::g_mcmSettings.weaponConditionAffectsValue.load()) ||
-            (isArmor && ConditionSystem::g_mcmSettings.armorConditionAffectsValue.load());
+            (isWeapon && ConditionSystem::g_mcmSettings.enableWeaponCondition.load() &&
+                ConditionSystem::g_mcmSettings.weaponConditionAffectsValue.load()) ||
+            (isArmor && ConditionSystem::g_mcmSettings.enableArmorCondition.load() &&
+                ConditionSystem::g_mcmSettings.armorConditionAffectsValue.load());
 
         if (valueAffected) {
-            float durability = ConditionSystem::GetItemDurabilityPercent(const_cast<RE::BGSInventoryItem*>(a_this), a_stackID);
+            float durability = ConditionSystem::GetExtraDataDurabilityPercent(a_object, a_extra);
 
             if (durability != 1.0f) {
-                std::int32_t newValue = static_cast<std::int32_t>(originalValue * durability);
+                std::int64_t newValue = static_cast<std::int64_t>(originalValue * GetConditionValueMultiplier(durability));
                 return newValue > 0 ? newValue : (originalValue > 0 ? 1 : 0);
             }
         }
@@ -531,7 +580,11 @@ namespace ConditionSystem::Hooks
     void OnCombatDamageCalculate(RE::Actor* /*attacker*/, RE::TESObjectWEAP* weapon, float* damagePtr) {
         // IIF 已经帮我们排除了 UI 环境，并且确保了 attacker 是玩家
         if (!weapon || !damagePtr) return;
-        if (!ConditionSystem::g_mcmSettings.weaponConditionAffectsDamage.load()) return;
+        if (!ConditionSystem::g_mcmSettings.enableWeaponCondition.load() ||
+            !ConditionSystem::g_mcmSettings.weaponConditionAffectsDamage.load()) {
+            return;
+        }
+        if (!IsManagedWeaponCached(weapon)) return;
 
         auto wType = weapon->weaponData.type.get();
         if (wType == RE::WEAPON_TYPE::kGrenade || wType == RE::WEAPON_TYPE::kMine) return;
@@ -554,9 +607,17 @@ namespace ConditionSystem::Hooks
     // =========================================================================
     // 3. 挂载给 IIF 的护甲防御计算回调
     // =========================================================================
-    void OnCombatArmorCalculate(RE::Actor* /*wearer*/, float* ratingPtr) {
+    void OnCombatArmorCalculate(RE::Actor* wearer, float* ratingPtr) {
         if (!ratingPtr) return;
-        if (!ConditionSystem::g_mcmSettings.armorConditionAffectsResistance.load()) return;
+        if (!ConditionSystem::g_mcmSettings.enableArmorCondition.load() ||
+            !ConditionSystem::g_mcmSettings.armorConditionAffectsResistance.load()) {
+            return;
+        }
+
+        // CSF's durability state is player inventory state. IIF can ask for
+        // armor ratings for other actors as well; never rescan the player's
+        // inventory for those requests.
+        if (wearer != RE::PlayerCharacter::GetSingleton()) return;
 
         float avgDurability = ConditionSystem::GetAverageEquippedArmorDurability();
 
@@ -578,19 +639,33 @@ namespace ConditionSystem::Hooks
     // =========================================================================
     void InstallAll() {
         // 初始化 MinHook，允许 ALREADY_INITIALIZED 状态
-        if (MH_Initialize() != MH_OK && MH_Initialize() != MH_ERROR_ALREADY_INITIALIZED) {
-            REX::ERROR("MinHook 初始化失败！");
+        const auto initStatus = MH_Initialize();
+        if (initStatus != MH_OK && initStatus != MH_ERROR_ALREADY_INITIALIZED) {
+            REX::ERROR("MinHook 初始化失败: {}", static_cast<int>(initStatus));
             return;
         }
 
-        REL::Relocation<std::uintptr_t> getInvValueAddr{ RE::ID::BGSInventoryItem::GetInventoryValue };
-        MH_CreateHook((void*)getInvValueAddr.address(), (void*)&GetInventoryValue_Hook, (void**)&_GetInventoryValue_Original);
+        REL::Relocation<std::uintptr_t> getInvValueAddr{ RE::ID::BGSInventoryItemUtils::GetInventoryValue };
+        const auto valueHookStatus = MH_CreateHook((void*)getInvValueAddr.address(), (void*)&GetInventoryValue_Hook, (void**)&_GetInventoryValue_Original);
+        if (valueHookStatus != MH_OK) {
+            REX::ERROR("创建 GetInventoryValue 钩子失败: {}", static_cast<int>(valueHookStatus));
+            return;
+        }
 
         // 挂钩 EquipObject：让杂项/垃圾类型的修理工具也能被点击使用
         REL::Relocation<std::uintptr_t> equipObjAddr{ RE::ID::ActorEquipManager::EquipObject };
-        MH_CreateHook((void*)equipObjAddr.address(), (void*)&EquipObject_Hook, (void**)&_EquipObject_Original);
+        const auto equipHookStatus = MH_CreateHook((void*)equipObjAddr.address(), (void*)&EquipObject_Hook, (void**)&_EquipObject_Original);
+        if (equipHookStatus != MH_OK) {
+            REX::ERROR("创建 EquipObject 钩子失败: {}", static_cast<int>(equipHookStatus));
+            MH_RemoveHook((void*)getInvValueAddr.address());
+            return;
+        }
 
-        MH_EnableHook(MH_ALL_HOOKS);
+        const auto enableStatus = MH_EnableHook(MH_ALL_HOOKS);
+        if (enableStatus != MH_OK) {
+            REX::ERROR("启用 MinHook 钩子失败: {}", static_cast<int>(enableStatus));
+            return;
+        }
         REX::INFO("[MinHook] CSF 交易价值拦截 + 修理工具 EquipObject 钩子已接管！");
     }
 

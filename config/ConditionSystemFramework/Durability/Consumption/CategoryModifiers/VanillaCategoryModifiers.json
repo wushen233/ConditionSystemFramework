@@ -1,0 +1,127 @@
+{
+  // 所有匹配项都会叠加。priority 只保证确定性的应用和日志顺序，
+  // maxDurabilityMult、degradeMult 使用累乘，degradeRateFlat 使用累加。
+  "modifiers": [
+    {
+      "name": "BallisticFamily",
+      "Domain": "Weapon",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Weapon.Family.Ballistic" ] },
+      "maxDurabilityMult": 1.00,
+      "degradeMult": 1.00
+    },
+    {
+      "name": "EnergyFamily",
+      "Domain": "Weapon",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Weapon.Family.Energy" ] },
+      "maxDurabilityMult": 0.90,
+      "degradeMult": 1.15
+    },
+    {
+      "name": "LauncherFamily",
+      "Domain": "Weapon",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Weapon.Family.Launcher" ] },
+      "maxDurabilityMult": 1.35,
+      "degradeMult": 1.20
+    },
+    {
+      "name": "ElectromagneticFamily",
+      "Domain": "Weapon",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Weapon.Family.Electromagnetic" ] },
+      "maxDurabilityMult": 0.90,
+      "degradeMult": 1.25
+    },
+    {
+      "name": "GammaFamily",
+      "Domain": "Weapon",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Weapon.Family.Gamma" ] },
+      "maxDurabilityMult": 0.90,
+      "degradeMult": 1.15
+    },
+    {
+      "name": "AlienFamily",
+      "Domain": "Weapon",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Weapon.Family.Alien" ] },
+      "maxDurabilityMult": 1.20,
+      "degradeMult": 0.80
+    },
+    {
+      "name": "ShotgunConfiguration",
+      "Domain": "Weapon",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Weapon.Configuration.Shotgun" ] },
+      "maxDurabilityMult": 1.10,
+      "degradeMult": 1.20
+    },
+    {
+      "name": "SniperConfiguration",
+      "Domain": "Weapon",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Weapon.Configuration.Sniper" ] },
+      "maxDurabilityMult": 0.90,
+      "degradeMult": 1.25
+    },
+
+    {
+      "name": "ArmorGradeA",
+      "Domain": "Armor",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Armor.Grade.A" ] },
+      "maxDurabilityMult": 0.85
+    },
+    {
+      "name": "ArmorGradeB",
+      "Domain": "Armor",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Armor.Grade.B" ] },
+      "maxDurabilityMult": 1.00
+    },
+    {
+      "name": "ArmorGradeC",
+      "Domain": "Armor",
+      "priority": 300,
+      "AppliesTo": { "all": [ "Armor.Grade.C" ] },
+      "maxDurabilityMult": 1.30
+    },
+    {
+      "name": "ArmorRegionTorso",
+      "Domain": "Armor",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Armor.Region.Torso" ] },
+      "maxDurabilityMult": 1.40
+    },
+    {
+      "name": "ArmorRegionLimbs",
+      "Domain": "Armor",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Armor.Region.Limbs" ] },
+      "maxDurabilityMult": 1.00
+    },
+    {
+      "name": "ArmorRegionHead",
+      "Domain": "Armor",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Armor.Region.Head" ] },
+      "maxDurabilityMult": 0.70
+    },
+    {
+      "name": "ArmorRegionFace",
+      "Domain": "Armor",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Armor.Region.Face" ] },
+      "maxDurabilityMult": 0.40
+    },
+    {
+      "name": "ArmorRegionAccessory",
+      "Domain": "Armor",
+      "priority": 200,
+      "AppliesTo": { "all": [ "Armor.Region.Accessory" ] },
+      "maxDurabilityMult": 0.35
+    }
+  ]
+}

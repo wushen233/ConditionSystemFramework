@@ -1,0 +1,266 @@
+{
+  /*
+   * 原版技能 Provider。
+   *
+   * 武器基础兼容键：
+   * 1. 目标与供体至少共享一个 Weapon.Family。
+   * 2. Weapon.Handling 相同。
+   * 3. Weapon.Configuration 不阻止混修，只调整效率。
+   *
+   * 混合技术武器可以命中多条技能路线；运行时从玩家已满足的规则中
+   * 选择 Priority 最高、最终效率最高的规则。
+   */
+  "RequiredPlugin": "Fallout4.esm",
+  "schemaVersion": 3,
+  "module": "Repair.JuryRigging",
+  "ProviderPriority": 0,
+  "JuryRiggingRules": [
+    {
+      // 模块化武器即使基础记录相同，也必须保持最终主体形态一致。
+      "RuleName": "Exact Base Weapon With Same Handling",
+      "Priority": 300,
+      "MaterialConditionMultiplier": 1.0,
+      "AppliesTo": {
+        "target": { "all": ["weapon"], "none": ["Weapon.Flag.Ignore"] },
+        "material": { "all": ["weapon"], "none": ["Weapon.Flag.Ignore"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameBase" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Exact Base Armor",
+      "Priority": 300,
+      "MaterialConditionMultiplier": 1.0,
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": { "all": [{ "type": "sameBase" }] }
+    },
+    {
+      "RuleName": "Armor: Same Material, Region and Grade (Armorer Rank 1)",
+      "Priority": 250,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B254" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameGroup", "group": "Armor.Region" },
+          { "type": "sameGroup", "group": "Armor.Material" },
+          { "type": "sameOptionalGroup", "group": "Armor.Grade" }
+        ]
+      }
+    },
+    {
+      // 实弹和发射器技术使用 Gun Nut；Family 仍按实际共享类别比较。
+      "RuleName": "Ballistic/Launcher: Same Handling (Gun Nut Rank 1)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004A0DA" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] },
+        "material": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      },
+      "EfficiencyModifiers": [
+        {
+          "type": "optionalGroupMultiplier",
+          "group": "Weapon.Configuration",
+          "same": 1.0,
+          "different": 0.8,
+          "oneMissing": 0.9
+        }
+      ]
+    },
+    {
+      "RuleName": "Ballistic/Launcher: Cross Handling (Gun Nut Rank 4)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004A0DA" },
+      "SkillThresholds": [{ "threshold": 4, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] },
+        "material": { "any": ["Weapon.Family.Ballistic", "Weapon.Family.Launcher"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      // 能量、电磁、伽马和外星技术使用 Science。
+      "RuleName": "Advanced Technology: Same Handling (Science Rank 1)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x000264D9" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      },
+      "EfficiencyModifiers": [
+        {
+          "type": "optionalGroupMultiplier",
+          "group": "Weapon.Configuration",
+          "same": 1.0,
+          "different": 0.8,
+          "oneMissing": 0.9
+        }
+      ]
+    },
+    {
+      "RuleName": "Advanced Technology: Cross Handling (Science Rank 4)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x000264D9" },
+      "SkillThresholds": [{ "threshold": 4, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        },
+        "material": {
+          "any": [
+            "Weapon.Family.Energy",
+            "Weapon.Family.Electromagnetic",
+            "Weapon.Family.Gamma",
+            "Weapon.Family.Alien"
+          ]
+        }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      "RuleName": "Melee: Same Handling (Blacksmith Rank 1)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B253" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Melee"] },
+        "material": { "all": ["Weapon.Family.Melee"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Melee: Cross Handling (Blacksmith Rank 3)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 0.8,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B253" },
+      "SkillThresholds": [{ "threshold": 3, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Melee"] },
+        "material": { "all": ["Weapon.Family.Melee"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sharesAnyCategory", "group": "Weapon.Family" }]
+      }
+    },
+    {
+      "RuleName": "Unarmed: Same Handling (Blacksmith Rank 1)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B253" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["Weapon.Family.Unarmed"] },
+        "material": { "all": ["Weapon.Family.Unarmed"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sharesAnyCategory", "group": "Weapon.Family" },
+          { "type": "sameGroup", "group": "Weapon.Handling" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Armor: Same Material and Region (Armorer Rank 1)",
+      "Priority": 200,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B254" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [
+          { "type": "sameGroup", "group": "Armor.Region" },
+          { "type": "sameGroup", "group": "Armor.Material" }
+        ]
+      }
+    },
+    {
+      "RuleName": "Clothing: Same Repair Region (Armorer Rank 1)",
+      "Priority": 190,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B254" },
+      "SkillThresholds": [{ "threshold": 1, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor", "Armor.Material.Textile"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor", "Armor.Material.Textile"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Armor.Region" }]
+      }
+    },
+    {
+      "RuleName": "Armor: Universal Same Region (Armorer Rank 4)",
+      "Priority": 100,
+      "MaterialConditionMultiplier": 1.0,
+      "RequiredSkill": { "Type": "Perk", "FormID": "0x0004B254" },
+      "SkillThresholds": [{ "threshold": 4, "maxValue": 1.0 }],
+      "AppliesTo": {
+        "target": { "all": ["armor"], "none": ["Armor.Flag.Ignore"] },
+        "material": { "all": ["armor"], "none": ["Armor.Flag.Ignore", "Armor.Flag.NoDonor"] }
+      },
+      "Compatibility": {
+        "all": [{ "type": "sameGroup", "group": "Armor.Region" }]
+      }
+    }
+  ]
+}

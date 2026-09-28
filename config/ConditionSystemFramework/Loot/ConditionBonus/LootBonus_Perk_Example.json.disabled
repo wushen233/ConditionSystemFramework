@@ -1,0 +1,31 @@
+{
+  "RequiredPlugin": "",
+  "LootBonusRule": {
+    "GlobalCap": 2.0,
+    "RequiredSkill": {
+      "Type": "Perk",
+      "Plugin": "YourMod.esp",
+      "FormID": "0xPLACEHOLDER"
+    },
+    "Tiers": [
+      {
+        "minLevel": 1,
+        "hitChance": 3.0,
+        "bonusMin": 0.05,
+        "bonusMax": 0.15
+      },
+      {
+        "minLevel": 2,
+        "hitChance": 6.0,
+        "bonusMin": 0.15,
+        "bonusMax": 0.3
+      },
+      {
+        "minLevel": 3,
+        "hitChance": 10.0,
+        "bonusMin": 0.25,
+        "bonusMax": 0.45
+      }
+    ]
+  }
+}

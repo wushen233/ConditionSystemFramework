@@ -1,0 +1,38 @@
+{
+  // 普通穿戴物的基础耐久由维修材质决定。
+  // Region 和 Grade 在 CategoryModifiers 中作为规模与厚度修正叠加。
+  "profiles": [
+    {
+      "name": "RigidMaterialBase",
+      "priority": 500,
+      "maxDurability": 850.0,
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "AppliesTo": { "all": [ "Armor.Material.Rigid" ] }
+    },
+    {
+      "name": "ScrapMaterialBase",
+      "priority": 500,
+      "maxDurability": 600.0,
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "AppliesTo": { "all": [ "Armor.Material.Scrap" ] }
+    },
+    {
+      "name": "FlexibleMaterialBase",
+      "priority": 500,
+      "maxDurability": 500.0,
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "AppliesTo": { "all": [ "Armor.Material.Flexible" ] }
+    },
+    {
+      "name": "TextileMaterialBase",
+      "priority": 500,
+      "maxDurability": 300.0,
+      "useFlatDegrade": false,
+      "degradeRate": 0.0,
+      "AppliesTo": { "all": [ "Armor.Material.Textile" ] }
+    }
+  ]
+}

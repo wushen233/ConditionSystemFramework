@@ -39,8 +39,17 @@ public source license applies only to files contained in this repository.
 
 - `ui/actionscript/jury-rigging-menu` contains the CSF jury-rigging menu AS3,
   its earlier AS2 source, and the Adobe Animate FLA project.
-- `ui/actionscript/condition-widget` contains the Scaleform condition widget
-  AS3 classes and Adobe Animate FLA project.
+- `ui/actionscript/condition-cnd-widget-fnv` and
+  `ui/actionscript/condition-cnd-widget-fo4` contain the separate FNV and
+  Fallout 4 CND positioner/runtime FLAs and publish to
+  `ConditionCndWidgetFNV.swf` and `ConditionCndWidgetFO4.swf`.
+- `ui/actionscript/condition-heat-widget` contains the standalone heat-widget
+  AS3 document class and Adobe Animate FLA project.
+- `ui/actionscript/condition-unjam-widget` contains the standalone
+  unjam/diagnostic widget AS3 document class and reconstructed Adobe Animate
+  FLA project for the split unjam backend.
+- `ui/actionscript/jury-rigging-menu` contains the temporary repair/Jury
+  Rigging menu AS3 source, FLA project, and retained AS2 reference source.
 - `ui/actionscript/fallui-patches` contains the four menu scripts modified for
   CSF workbench buttons, repair navigation, and condition display integration.
 - `ui/prisma/views` contains the CSF-authored condition widget for

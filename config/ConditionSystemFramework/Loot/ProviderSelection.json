@@ -1,0 +1,16 @@
+{
+  /*
+   * Loot 模块的 Provider 选择策略。
+   *
+   * JsonPriorityFirst 优先比较 ProviderPriority。
+   * PluginLoadOrderFirst 优先比较 RequiredPlugin 的加载顺序。
+   * RequiredPlugin 未加载时，整个 Provider 配置被跳过。
+   */
+  "schemaVersion": 1,
+  "module": "Loot.ProviderSelection",
+  "modules": {
+    "ConditionBonus": {
+      "mode": "PluginLoadOrderFirst"
+    }
+  }
+}

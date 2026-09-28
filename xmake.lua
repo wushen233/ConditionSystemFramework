@@ -46,3 +46,9 @@ target("ConditionSystemFramework")
         "PLUGIN_VERSION_MINOR=0",
         "PLUGIN_VERSION_PATCH=8"
     )
+
+target("ConditionRegression")
+    set_kind("binary")
+    set_default(false)
+    add_files("tests/ConditionRegression.cpp")
+    add_includedirs("src")
