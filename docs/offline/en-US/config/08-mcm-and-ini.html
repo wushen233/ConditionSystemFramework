@@ -58,8 +58,8 @@
 | <code>iHeatWidgetType</code> | Heat widget backend |
 | <code>bShowItemCardCND</code> | Show CND on item cards |
 | <code>iItemCardCNDPosition</code> | Item-card CND position |
-| <code>fUnjamX/Y/Scale</code> | Unjam widget position and scale |
-| <code>fHeatWidgetX/Y/Scale</code> | Heat widget position and scale |
+| <code>fUnjamX/Y/Scale</code> | Unjam widget center-relative position and scale; <code>0, 0</code> is screen center |
+| <code>fHeatWidgetX/Y/Scale</code> | Heat widget center-relative position and scale; <code>0, 0</code> is screen center |
 | <code>fJuryStatsOffsetX/Y</code> | Jury Rigging stats offset |
 | <code>fJuryStatsRowSpacing</code> | Jury Rigging stats row spacing |
 | <code>iJuryStatsColorMode</code> | Jury stats color mode |
@@ -68,7 +68,7 @@
 | <code>iHeatColorMode</code> | Heat widget color mode |
 | <code>bUseCustomColor</code> | Enable the custom color value |
 | <code>sCustomColor</code> | Six-digit hexadecimal RGB color, for example <code>FFFFFF</code> |</p>
-<p>Each widget reads its own color mode. HUD-following and custom-color modes are supported. Heat-stage colors and the overheated-state override are special states and are not fully replaced by the normal color mode.</p>
+<p>Each widget reads its own color mode. HUD-following and custom-color modes are supported. Normal heat fill, border and text follow the selected color; the overheated-state flash remains a red/yellow alert override.</p>
 <h2>Mechanics: Switches and Initial Condition</h2>
 <p>| Key | Purpose |
 |---|---|

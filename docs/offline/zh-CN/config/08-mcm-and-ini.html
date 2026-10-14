@@ -58,8 +58,8 @@
 | <code>iHeatWidgetType</code> | 过热小部件后端 |
 | <code>bShowItemCardCND</code> | 物品卡片显示 CND |
 | <code>iItemCardCNDPosition</code> | 物品卡片 CND 位置 |
-| <code>fUnjamX/Y/Scale</code> | 卡壳小部件位置和缩放 |
-| <code>fHeatWidgetX/Y/Scale</code> | 过热小部件位置和缩放 |
+| <code>fUnjamX/Y/Scale</code> | 卡壳小部件相对屏幕中心的位置和缩放；<code>0, 0</code> 为屏幕中心 |
+| <code>fHeatWidgetX/Y/Scale</code> | 过热小部件相对屏幕中心的位置和缩放；<code>0, 0</code> 为屏幕中心 |
 | <code>fJuryStatsOffsetX/Y</code> | Jury Rigging 右侧统计偏移 |
 | <code>fJuryStatsRowSpacing</code> | Jury Rigging 统计行距 |
 | <code>iJuryStatsColorMode</code> | Jury 统计颜色模式 |
@@ -68,7 +68,7 @@
 | <code>iHeatColorMode</code> | 过热小部件颜色模式 |
 | <code>bUseCustomColor</code> | 启用自定义颜色值 |
 | <code>sCustomColor</code> | 六位十六进制 RGB 颜色，例如 <code>FFFFFF</code> |</p>
-<p>颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色；过热条的阶段色以及过热状态覆盖色属于特殊状态，不会被普通颜色模式完全替换。</p>
+<p>颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色。普通过热填充、边框和文字跟随所选颜色；进入过热状态后仍保留红/黄闪烁警示色。</p>
 <h2>Mechanics：总开关与随机初始耐久</h2>
 <p>| 键 | 作用 |
 |---|---|
