@@ -3,16 +3,16 @@
 Runtime user configuration:
 
 ```text
+Data/MCM/Settings/ConditionSystemFramework.ini
+```
+
+The runtime default template is:
+
+```text
 Data/MCM/Config/ConditionSystemFramework/settings.ini
 ```
 
-The project default template is:
-
-```text
-projects/ConditionSystemFramework/data/MCM/Config/ConditionSystemFramework/settings.ini
-```
-
-The MO2 overwrite or a user-specific configuration takes precedence over the project default. MCM writes values back to the user configuration; after manual edits, reopen MCM or restart the game to trigger a reload.
+Values in the user configuration take precedence over the default template. MCM writes values to the user configuration; when using MO2, these writes may appear in `overwrite`. After manual edits, reopen MCM or restart the game to trigger a reload.
 
 ## General
 

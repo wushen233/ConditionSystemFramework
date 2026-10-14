@@ -3,16 +3,16 @@
 运行时用户配置：
 
 ```text
+Data/MCM/Settings/ConditionSystemFramework.ini
+```
+
+运行时默认模板位于：
+
+```text
 Data/MCM/Config/ConditionSystemFramework/settings.ini
 ```
 
-项目默认模板位于：
-
-```text
-projects/ConditionSystemFramework/data/MCM/Config/ConditionSystemFramework/settings.ini
-```
-
-MO2 的 `overwrite` 或用户专用配置优先于项目默认模板。MCM 保存设置时会把值写回用户配置；手动编辑后需要重新打开 MCM 或重启游戏触发重新读取。
+用户配置中的值优先于默认模板。MCM 保存设置时会把值写入用户配置；使用 MO2 时，这些写入可能出现在 `overwrite` 中。手动编辑后需要重新打开 MCM 或重启游戏触发重新读取。
 
 ## General
 
