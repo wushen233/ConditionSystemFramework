@@ -2,7 +2,8 @@
 param(
     [string]$DocsSource = (Join-Path $PSScriptRoot '..\docs'),
     [string]$OutputRoot = (Join-Path $PSScriptRoot '..\docs\offline'),
-    [string]$MarkdownItPath = ''
+    [string]$MarkdownItPath = '',
+    [string]$PythonPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,25 +62,14 @@ function Rewrite-DocumentLinks(
 }
 
 function Invoke-MarkdownIt([string]$MarkdownPath) {
-    $outputPath = Join-Path ([System.IO.Path]::GetTempPath()) ("csf-html-" + [System.Guid]::NewGuid().ToString('N') + '.html')
-    $errorPath = Join-Path ([System.IO.Path]::GetTempPath()) ("csf-html-" + [System.Guid]::NewGuid().ToString('N') + '.err')
     $previousEncoding = $env:PYTHONIOENCODING
     try {
         $env:PYTHONIOENCODING = 'utf-8'
-        $process = Start-Process -FilePath $script:MarkdownItPath `
-            -ArgumentList @($MarkdownPath) `
-            -RedirectStandardOutput $outputPath `
-            -RedirectStandardError $errorPath `
-            -NoNewWindow -PassThru -Wait
-        if ($process.ExitCode -ne 0) {
-            $errorText = if (Test-Path -LiteralPath $errorPath) {
-                [System.IO.File]::ReadAllText($errorPath)
-            } else {
-                ''
-            }
-            throw "markdown-it failed for $MarkdownPath with exit code $($process.ExitCode). $errorText"
+        $rendered = & $script:PythonPath (Join-Path $PSScriptRoot 'render-offline-markdown.py') $MarkdownPath
+        if ($LASTEXITCODE -ne 0) {
+            throw "Markdown rendering failed for $MarkdownPath with exit code $LASTEXITCODE. The Python environment must include markdown-it-py."
         }
-        return [System.IO.File]::ReadAllText($outputPath, [System.Text.UTF8Encoding]::new($false))
+        return ($rendered -join "`n") + "`n"
     }
     finally {
         if ($null -eq $previousEncoding) {
@@ -87,7 +77,6 @@ function Invoke-MarkdownIt([string]$MarkdownPath) {
         } else {
             $env:PYTHONIOENCODING = $previousEncoding
         }
-        Remove-Item -LiteralPath $outputPath, $errorPath -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -157,14 +146,37 @@ $Body
 $script:SourceRoot = Get-FullPath $DocsSource
 $script:OutputRoot = Get-FullPath $OutputRoot
 
-if (-not $MarkdownItPath) {
-    $command = Get-Command markdown-it -ErrorAction SilentlyContinue
-    if ($null -eq $command) {
-        throw 'markdown-it was not found in PATH.'
+# Preserve the existing launcher option for Windows Python environments.
+# The CLI itself cannot enable tables, so use its Python interpreter instead.
+if (-not $PythonPath) {
+    if (-not $MarkdownItPath) {
+        $markdownCommand = Get-Command markdown-it -ErrorAction SilentlyContinue
+        if ($null -ne $markdownCommand) { $MarkdownItPath = $markdownCommand.Source }
     }
-    $MarkdownItPath = $command.Source
+    if ($MarkdownItPath) {
+        $launcherDirectory = Split-Path -Parent (Get-FullPath $MarkdownItPath)
+        foreach ($candidate in @(
+            (Join-Path $launcherDirectory 'python.exe'),
+            (Join-Path $launcherDirectory '..\python.exe')
+        )) {
+            if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+                $PythonPath = Get-FullPath $candidate
+                break
+            }
+        }
+        if (-not $PythonPath) {
+            throw 'Could not locate the markdown-it Python interpreter. Supply -PythonPath explicitly.'
+        }
+    }
 }
-$script:MarkdownItPath = $MarkdownItPath
+if (-not $PythonPath) {
+    $command = Get-Command python -ErrorAction SilentlyContinue
+    if ($null -eq $command) {
+        throw 'Python was not found in PATH. Use -PythonPath with an environment containing markdown-it-py.'
+    }
+    $PythonPath = $command.Source
+}
+$script:PythonPath = $PythonPath
 
 $languages = @(
     [pscustomobject]@{

@@ -35,97 +35,331 @@
   <main>
 <h1>MCM and INI Module</h1>
 <p>Runtime user configuration:</p>
+<pre><code class="language-text">Data/MCM/Settings/ConditionSystemFramework.ini
+</code></pre>
+<p>The runtime default template is:</p>
 <pre><code class="language-text">Data/MCM/Config/ConditionSystemFramework/settings.ini
 </code></pre>
-<p>The project default template is:</p>
-<pre><code class="language-text">projects/ConditionSystemFramework/data/MCM/Config/ConditionSystemFramework/settings.ini
-</code></pre>
-<p>The MO2 overwrite or a user-specific configuration takes precedence over the project default. MCM writes values back to the user configuration; after manual edits, reopen MCM or restart the game to trigger a reload.</p>
+<p>Values in the user configuration take precedence over the default template. MCM writes values to the user configuration; when using MO2, these writes may appear in <code>overwrite</code>. After manual edits, reopen MCM or restart the game to trigger a reload.</p>
 <h2>General</h2>
-<p>| Key | Purpose |
-|---|---|
-| <code>bEnable</code> | CSF master switch |
-| <code>fWidgetX</code> / <code>fWidgetY</code> | SWF CND widget position |
-| <code>fWidgetScale</code> | SWF CND widget scale |
-| <code>iWidgetType</code> | Main CND backend: <code>0</code> PrismaUI, <code>1</code> SWF |
-| <code>iSwfCndStyle</code> | SWF CND style selection |</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bEnable</code></td>
+<td>CSF master switch</td>
+</tr>
+<tr>
+<td><code>fWidgetX</code> / <code>fWidgetY</code></td>
+<td>SWF CND widget position</td>
+</tr>
+<tr>
+<td><code>fWidgetScale</code></td>
+<td>SWF CND widget scale</td>
+</tr>
+<tr>
+<td><code>iWidgetType</code></td>
+<td>Main CND backend: <code>0</code> PrismaUI, <code>1</code> SWF</td>
+</tr>
+<tr>
+<td><code>iSwfCndStyle</code></td>
+<td>SWF CND style selection</td>
+</tr>
+</tbody>
+</table>
 <p>The unjam and heat widgets can select their backends independently through <code>iUnjamWidgetType</code> and <code>iHeatWidgetType</code>. If any widget uses PrismaUI, CSF loads the PrismaUI backend.</p>
 <h2>UI</h2>
-<p>| Key | Purpose |
-|---|---|
-| <code>bShowWidgetText</code> | Show widget text |
-| <code>iUnjamWidgetType</code> | Unjam/fault widget backend |
-| <code>iHeatWidgetType</code> | Heat widget backend |
-| <code>bShowItemCardCND</code> | Show CND on item cards |
-| <code>iItemCardCNDPosition</code> | Item-card CND position |
-| <code>fUnjamX/Y/Scale</code> | Unjam widget position and scale |
-| <code>fHeatWidgetX/Y/Scale</code> | Heat widget position and scale |
-| <code>fJuryStatsOffsetX/Y</code> | Jury Rigging stats offset |
-| <code>fJuryStatsRowSpacing</code> | Jury Rigging stats row spacing |
-| <code>iJuryStatsColorMode</code> | Jury stats color mode |
-| <code>iCndColorMode</code> | CND widget color mode |
-| <code>iUnjamColorMode</code> | Unjam widget color mode |
-| <code>iHeatColorMode</code> | Heat widget color mode |
-| <code>bUseCustomColor</code> | Enable the custom color value |
-| <code>sCustomColor</code> | Six-digit hexadecimal RGB color, for example <code>FFFFFF</code> |</p>
-<p>Each widget reads its own color mode. HUD-following and custom-color modes are supported. Heat-stage colors and the overheated-state override are special states and are not fully replaced by the normal color mode.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bShowWidgetText</code></td>
+<td>Show widget text</td>
+</tr>
+<tr>
+<td><code>iUnjamWidgetType</code></td>
+<td>Unjam/fault widget backend</td>
+</tr>
+<tr>
+<td><code>iHeatWidgetType</code></td>
+<td>Heat widget backend</td>
+</tr>
+<tr>
+<td><code>bShowItemCardCND</code></td>
+<td>Show CND on item cards</td>
+</tr>
+<tr>
+<td><code>iItemCardCNDPosition</code></td>
+<td>Item-card CND position</td>
+</tr>
+<tr>
+<td><code>fUnjamX/Y/Scale</code></td>
+<td>Unjam widget center-relative position and scale; <code>0, 0</code> is screen center</td>
+</tr>
+<tr>
+<td><code>fHeatWidgetX/Y/Scale</code></td>
+<td>Heat widget center-relative position and scale; <code>0, 0</code> is screen center</td>
+</tr>
+<tr>
+<td><code>fJuryStatsOffsetX/Y</code></td>
+<td>Jury Rigging stats offset</td>
+</tr>
+<tr>
+<td><code>fJuryStatsRowSpacing</code></td>
+<td>Jury Rigging stats row spacing</td>
+</tr>
+<tr>
+<td><code>iJuryStatsColorMode</code></td>
+<td>Jury stats color mode</td>
+</tr>
+<tr>
+<td><code>iCndColorMode</code></td>
+<td>CND widget color mode</td>
+</tr>
+<tr>
+<td><code>iUnjamColorMode</code></td>
+<td>Unjam widget color mode</td>
+</tr>
+<tr>
+<td><code>iHeatColorMode</code></td>
+<td>Heat widget color mode</td>
+</tr>
+<tr>
+<td><code>bUseCustomColor</code></td>
+<td>Enable the custom color value</td>
+</tr>
+<tr>
+<td><code>sCustomColor</code></td>
+<td>Six-digit hexadecimal RGB color, for example <code>FFFFFF</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each widget reads its own color mode. HUD-following and custom-color modes are supported. Normal heat fill, border and text follow the selected color; the overheated-state flash remains a red/yellow alert override.</p>
 <h2>Mechanics: Switches and Initial Condition</h2>
-<p>| Key | Purpose |
-|---|---|
-| <code>bRandomLootDurability</code> | Randomize initial condition for new weapons and armor |
-| <code>bEnableWeaponCondition</code> | Weapon durability system |
-| <code>bEnableArmorCondition</code> | Normal armor durability system |
-| <code>bEnableOverCondition</code> | Allow condition above 100% |
-| <code>bDialogueFullDurability</code> | Keep dialogue-related new items at full condition |
-| <code>fWeaponLootDurabilityMin/Max</code> | Weapon initial condition range |
-| <code>fArmorLootDurabilityMin/Max</code> | Armor initial condition range |
-| <code>fWeaponWearMultiplier</code> | Total weapon-wear multiplier; defaults to 1.0 when absent |
-| <code>fArmorWearMultiplier</code> | Total armor-wear multiplier; defaults to 1.0 when absent |
-| <code>fRepairMaterialCostMultiplier</code> | Repair material cost multiplier |</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bRandomLootDurability</code></td>
+<td>Randomize initial condition for new weapons and armor</td>
+</tr>
+<tr>
+<td><code>bEnableWeaponCondition</code></td>
+<td>Weapon durability system</td>
+</tr>
+<tr>
+<td><code>bEnableArmorCondition</code></td>
+<td>Normal armor durability system</td>
+</tr>
+<tr>
+<td><code>bEnableOverCondition</code></td>
+<td>Allow condition above 100%</td>
+</tr>
+<tr>
+<td><code>bDialogueFullDurability</code></td>
+<td>Keep dialogue-related new items at full condition</td>
+</tr>
+<tr>
+<td><code>fWeaponLootDurabilityMin/Max</code></td>
+<td>Weapon initial condition range</td>
+</tr>
+<tr>
+<td><code>fArmorLootDurabilityMin/Max</code></td>
+<td>Armor initial condition range</td>
+</tr>
+<tr>
+<td><code>fWeaponWearMultiplier</code></td>
+<td>Total weapon-wear multiplier; defaults to 1.0 when absent</td>
+</tr>
+<tr>
+<td><code>fArmorWearMultiplier</code></td>
+<td>Total armor-wear multiplier; defaults to 1.0 when absent</td>
+</tr>
+<tr>
+<td><code>fRepairMaterialCostMultiplier</code></td>
+<td>Repair material cost multiplier</td>
+</tr>
+</tbody>
+</table>
 <p>Ranges use ratios, so <code>0.25</code> means 25%.</p>
 <h2>Mechanics: Faults and Heat</h2>
-<p>| Key | Purpose |
-|---|---|
-| <code>fJamThreshold</code> | Start random jam checks below this condition ratio |
-| <code>fMaxJamChance</code> | Maximum jam chance |
-| <code>bEnableEnergyFault</code> | Energy weapon faults |
-| <code>fEnergyFaultChanceMultiplier</code> | Energy fault multiplier during firing |
-| <code>fEnergyReloadFaultChanceMultiplier</code> | Energy fault multiplier during reload |
-| <code>fEnergyFaultDuration</code> | Energy fault duration |
-| <code>bEnableWeaponOverheat</code> | Weapon overheat system |
-| <code>fOverheatHeatPerShot</code> | Base heat added per shot |
-| <code>fOverheatCooldownRate</code> | Cooling speed after firing stops |
-| <code>fOverheatRecoveryThreshold</code> | Recovery threshold for the overheated state |
-| <code>fOverheatWearMultiplier</code> | Extra weapon wear while overheated |
-| <code>iJammingPhase</code> | <code>0</code> firing jams, <code>1</code> reload jams |
-| <code>bQuickUnjam</code> | Quick fault clearing |</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fJamThreshold</code></td>
+<td>Start random jam checks below this condition ratio</td>
+</tr>
+<tr>
+<td><code>fMaxJamChance</code></td>
+<td>Maximum jam chance</td>
+</tr>
+<tr>
+<td><code>bEnableEnergyFault</code></td>
+<td>Energy weapon faults</td>
+</tr>
+<tr>
+<td><code>fEnergyFaultChanceMultiplier</code></td>
+<td>Energy fault multiplier during firing</td>
+</tr>
+<tr>
+<td><code>fEnergyReloadFaultChanceMultiplier</code></td>
+<td>Energy fault multiplier during reload</td>
+</tr>
+<tr>
+<td><code>fEnergyFaultDuration</code></td>
+<td>Energy fault duration</td>
+</tr>
+<tr>
+<td><code>bEnableWeaponOverheat</code></td>
+<td>Weapon overheat system</td>
+</tr>
+<tr>
+<td><code>fOverheatHeatPerShot</code></td>
+<td>Base heat added per shot</td>
+</tr>
+<tr>
+<td><code>fOverheatCooldownRate</code></td>
+<td>Cooling speed after firing stops</td>
+</tr>
+<tr>
+<td><code>fOverheatRecoveryThreshold</code></td>
+<td>Recovery threshold for the overheated state</td>
+</tr>
+<tr>
+<td><code>fOverheatWearMultiplier</code></td>
+<td>Extra weapon wear while overheated</td>
+</tr>
+<tr>
+<td><code>iJammingPhase</code></td>
+<td><code>0</code> firing jams, <code>1</code> reload jams</td>
+</tr>
+<tr>
+<td><code>bQuickUnjam</code></td>
+<td>Quick fault clearing</td>
+</tr>
+</tbody>
+</table>
 <p>Heat eligibility comes from the weapon Profile mechanism and the code's weapon/ammo identity checks. An ammo wear profile by itself does not turn a normal 10mm pistol into an overheating weapon.</p>
 <h2>Mechanics: Performance and Repair</h2>
-<p>| Key | Purpose |
-|---|---|
-| <code>iDegradationMode</code> | <code>0</code> NV stepped performance loss, <code>1</code> FO76 linear loss |
-| <code>fPenaltyThreshold</code> | Condition threshold where performance penalties begin |
-| <code>fPenaltyMultMid</code> | Mid-condition performance multiplier |
-| <code>fPenaltyMultLow</code> | Low-condition performance multiplier |
-| <code>fLinearMinMult</code> | Minimum multiplier in linear mode |
-| <code>bWeaponConditionAffectsDamage</code> | Weapon condition affects damage |
-| <code>bWeaponConditionAffectsValue</code> | Weapon condition affects value |
-| <code>bArmorConditionAffectsResistance</code> | Armor condition affects resistance |
-| <code>bArmorConditionAffectsValue</code> | Armor condition affects value |
-| <code>iRepairMaterialMode</code> | Repair material mode |
-| <code>bDynamicRepairMaterialCost</code> | Dynamic material cost |
-| <code>bEnablePipboyJuryRepair</code> | Pip-Boy Jury Rigging |
-| <code>bEnableWorkbenchMaterialRepair</code> | Workbench material repair |
-| <code>bEnableRepairKits</code> | Repair kits |
-| <code>bConfirmConsumeFavoriteMaterial</code> | Confirm before consuming favorite material |
-| <code>bConfirmConsumeLegendaryMaterial</code> | Confirm before consuming legendary material |
-| <code>fJuryRepairCap</code> | Pip-Boy Jury Rigging method cap |
-| <code>fWorkbenchRepairCap</code> | Workbench method cap |</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>iDegradationMode</code></td>
+<td><code>0</code> NV stepped performance loss, <code>1</code> FO76 linear loss</td>
+</tr>
+<tr>
+<td><code>fPenaltyThreshold</code></td>
+<td>Condition threshold where performance penalties begin</td>
+</tr>
+<tr>
+<td><code>fPenaltyMultMid</code></td>
+<td>Mid-condition performance multiplier</td>
+</tr>
+<tr>
+<td><code>fPenaltyMultLow</code></td>
+<td>Low-condition performance multiplier</td>
+</tr>
+<tr>
+<td><code>fLinearMinMult</code></td>
+<td>Minimum multiplier in linear mode</td>
+</tr>
+<tr>
+<td><code>bWeaponConditionAffectsDamage</code></td>
+<td>Weapon condition affects damage</td>
+</tr>
+<tr>
+<td><code>bWeaponConditionAffectsValue</code></td>
+<td>Weapon condition affects value</td>
+</tr>
+<tr>
+<td><code>bArmorConditionAffectsResistance</code></td>
+<td>Armor condition affects resistance</td>
+</tr>
+<tr>
+<td><code>bArmorConditionAffectsValue</code></td>
+<td>Armor condition affects value</td>
+</tr>
+<tr>
+<td><code>iRepairMaterialMode</code></td>
+<td>Repair material mode</td>
+</tr>
+<tr>
+<td><code>bDynamicRepairMaterialCost</code></td>
+<td>Dynamic material cost</td>
+</tr>
+<tr>
+<td><code>bEnablePipboyJuryRepair</code></td>
+<td>Pip-Boy Jury Rigging</td>
+</tr>
+<tr>
+<td><code>bEnableWorkbenchMaterialRepair</code></td>
+<td>Workbench material repair</td>
+</tr>
+<tr>
+<td><code>bEnableRepairKits</code></td>
+<td>Repair kits</td>
+</tr>
+<tr>
+<td><code>bConfirmConsumeFavoriteMaterial</code></td>
+<td>Confirm before consuming favorite material</td>
+</tr>
+<tr>
+<td><code>bConfirmConsumeLegendaryMaterial</code></td>
+<td>Confirm before consuming legendary material</td>
+</tr>
+<tr>
+<td><code>fJuryRepairCap</code></td>
+<td>Pip-Boy Jury Rigging method cap</td>
+</tr>
+<tr>
+<td><code>fWorkbenchRepairCap</code></td>
+<td>Workbench method cap</td>
+</tr>
+</tbody>
+</table>
 <p>The final repair cap also passes through skill tiers from <code>Repair/OverRepair/</code>; the smaller of the two caps is used.</p>
 <h2>Debug</h2>
-<p>| Key | Purpose |
-|---|---|
-| <code>bEnableLogging</code> | Write detailed diagnostics to <code>ConditionSystemFramework.log</code> |</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bEnableLogging</code></td>
+<td>Write detailed diagnostics to <code>ConditionSystemFramework.log</code></td>
+</tr>
+</tbody>
+</table>
 <p>When a Provider is not selected, a FormID does not resolve, a category is wrong or a skill is not recognized, enable this setting and fully restart before reproducing. The log distinguishes “configuration was not loaded” from “the rule loaded but its condition did not match.”</p>
 
   </main>

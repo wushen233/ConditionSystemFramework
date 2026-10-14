@@ -18,7 +18,9 @@ endif
 | `SetEquippedWeaponConditionPct(Actor, float)` | Sets the exact equipped weapon stack to `0-100`. |
 | `ModEquippedWeaponConditionPct(Actor, float)` | Adds or subtracts condition percentage points. |
 | `GetEquippedArmorConditionPct(Actor)` | Returns the average of supported equipped armor stacks. |
-| `CanJuryRig(Form, Form)` | Evaluates the current jury-rigging rules and player skill requirements. |
+| `CanJuryRig(Form, Form)` | Evaluates jury-rigging eligibility using base-form classification and player skill requirements. |
 | `OpenRepairMenu()` | Opens CSF's Pip-Boy jury-rigging menu. |
 
 Inventory entries that are not equipped are intentionally not exposed. Papyrus does not provide a stable exact stack identifier, and selecting by FormID would modify the wrong copy when the player owns duplicates.
+
+`CanJuryRig(Form, Form)` is a base-form query. It has no inventory-stack or `ExtraDataList` argument, so it cannot evaluate instance-specific OMOD keywords or classifications. A result may differ from the jury-rigging menu for two instances of the same weapon base form that have different receivers or other OMODs.

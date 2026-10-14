@@ -35,97 +35,331 @@
   <main>
 <h1>MCM 与 INI 模块</h1>
 <p>运行时用户配置：</p>
+<pre><code class="language-text">Data/MCM/Settings/ConditionSystemFramework.ini
+</code></pre>
+<p>运行时默认模板位于：</p>
 <pre><code class="language-text">Data/MCM/Config/ConditionSystemFramework/settings.ini
 </code></pre>
-<p>项目默认模板位于：</p>
-<pre><code class="language-text">projects/ConditionSystemFramework/data/MCM/Config/ConditionSystemFramework/settings.ini
-</code></pre>
-<p>MO2 的 <code>overwrite</code> 或用户专用配置优先于项目默认模板。MCM 保存设置时会把值写回用户配置；手动编辑后需要重新打开 MCM 或重启游戏触发重新读取。</p>
+<p>用户配置中的值优先于默认模板。MCM 保存设置时会把值写入用户配置；使用 MO2 时，这些写入可能出现在 <code>overwrite</code> 中。手动编辑后需要重新打开 MCM 或重启游戏触发重新读取。</p>
 <h2>General</h2>
-<p>| 键 | 作用 |
-|---|---|
-| <code>bEnable</code> | CSF 总开关 |
-| <code>fWidgetX</code> / <code>fWidgetY</code> | SWF CND 小部件位置 |
-| <code>fWidgetScale</code> | SWF CND 小部件缩放 |
-| <code>iWidgetType</code> | 主 CND 小部件后端：<code>0</code> PrismaUI，<code>1</code> SWF |
-| <code>iSwfCndStyle</code> | SWF CND 样式选择 |</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bEnable</code></td>
+<td>CSF 总开关</td>
+</tr>
+<tr>
+<td><code>fWidgetX</code> / <code>fWidgetY</code></td>
+<td>SWF CND 小部件位置</td>
+</tr>
+<tr>
+<td><code>fWidgetScale</code></td>
+<td>SWF CND 小部件缩放</td>
+</tr>
+<tr>
+<td><code>iWidgetType</code></td>
+<td>主 CND 小部件后端：<code>0</code> PrismaUI，<code>1</code> SWF</td>
+</tr>
+<tr>
+<td><code>iSwfCndStyle</code></td>
+<td>SWF CND 样式选择</td>
+</tr>
+</tbody>
+</table>
 <p>各故障小部件还可以单独通过 UI 段的 <code>iUnjamWidgetType</code> 和 <code>iHeatWidgetType</code> 选择后端；任意一个小部件使用 PrismaUI 时，CSF 会加载 PrismaUI 后端。</p>
 <h2>UI</h2>
-<p>| 键 | 作用 |
-|---|---|
-| <code>bShowWidgetText</code> | 显示小部件文字 |
-| <code>iUnjamWidgetType</code> | 卡壳/故障小部件后端 |
-| <code>iHeatWidgetType</code> | 过热小部件后端 |
-| <code>bShowItemCardCND</code> | 物品卡片显示 CND |
-| <code>iItemCardCNDPosition</code> | 物品卡片 CND 位置 |
-| <code>fUnjamX/Y/Scale</code> | 卡壳小部件位置和缩放 |
-| <code>fHeatWidgetX/Y/Scale</code> | 过热小部件位置和缩放 |
-| <code>fJuryStatsOffsetX/Y</code> | Jury Rigging 右侧统计偏移 |
-| <code>fJuryStatsRowSpacing</code> | Jury Rigging 统计行距 |
-| <code>iJuryStatsColorMode</code> | Jury 统计颜色模式 |
-| <code>iCndColorMode</code> | CND 小部件颜色模式 |
-| <code>iUnjamColorMode</code> | 卡壳小部件颜色模式 |
-| <code>iHeatColorMode</code> | 过热小部件颜色模式 |
-| <code>bUseCustomColor</code> | 启用自定义颜色值 |
-| <code>sCustomColor</code> | 六位十六进制 RGB 颜色，例如 <code>FFFFFF</code> |</p>
-<p>颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色；过热条的阶段色以及过热状态覆盖色属于特殊状态，不会被普通颜色模式完全替换。</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bShowWidgetText</code></td>
+<td>显示小部件文字</td>
+</tr>
+<tr>
+<td><code>iUnjamWidgetType</code></td>
+<td>卡壳/故障小部件后端</td>
+</tr>
+<tr>
+<td><code>iHeatWidgetType</code></td>
+<td>过热小部件后端</td>
+</tr>
+<tr>
+<td><code>bShowItemCardCND</code></td>
+<td>物品卡片显示 CND</td>
+</tr>
+<tr>
+<td><code>iItemCardCNDPosition</code></td>
+<td>物品卡片 CND 位置</td>
+</tr>
+<tr>
+<td><code>fUnjamX/Y/Scale</code></td>
+<td>卡壳小部件相对屏幕中心的位置和缩放；<code>0, 0</code> 为屏幕中心</td>
+</tr>
+<tr>
+<td><code>fHeatWidgetX/Y/Scale</code></td>
+<td>过热小部件相对屏幕中心的位置和缩放；<code>0, 0</code> 为屏幕中心</td>
+</tr>
+<tr>
+<td><code>fJuryStatsOffsetX/Y</code></td>
+<td>Jury Rigging 右侧统计偏移</td>
+</tr>
+<tr>
+<td><code>fJuryStatsRowSpacing</code></td>
+<td>Jury Rigging 统计行距</td>
+</tr>
+<tr>
+<td><code>iJuryStatsColorMode</code></td>
+<td>Jury 统计颜色模式</td>
+</tr>
+<tr>
+<td><code>iCndColorMode</code></td>
+<td>CND 小部件颜色模式</td>
+</tr>
+<tr>
+<td><code>iUnjamColorMode</code></td>
+<td>卡壳小部件颜色模式</td>
+</tr>
+<tr>
+<td><code>iHeatColorMode</code></td>
+<td>过热小部件颜色模式</td>
+</tr>
+<tr>
+<td><code>bUseCustomColor</code></td>
+<td>启用自定义颜色值</td>
+</tr>
+<tr>
+<td><code>sCustomColor</code></td>
+<td>六位十六进制 RGB 颜色，例如 <code>FFFFFF</code></td>
+</tr>
+</tbody>
+</table>
+<p>颜色模式由各小部件独立读取。当前实现支持 HUD 颜色和自定义颜色。普通过热填充、边框和文字跟随所选颜色；进入过热状态后仍保留红/黄闪烁警示色。</p>
 <h2>Mechanics：总开关与随机初始耐久</h2>
-<p>| 键 | 作用 |
-|---|---|
-| <code>bRandomLootDurability</code> | 新获得武器/护甲是否随机初始状况 |
-| <code>bEnableWeaponCondition</code> | 武器耐久系统 |
-| <code>bEnableArmorCondition</code> | 普通护甲耐久系统 |
-| <code>bEnableOverCondition</code> | 是否允许超过 100% |
-| <code>bDialogueFullDurability</code> | 对话相关新物品是否保持满耐久 |
-| <code>fWeaponLootDurabilityMin/Max</code> | 武器初始状况范围 |
-| <code>fArmorLootDurabilityMin/Max</code> | 护甲初始状况范围 |
-| <code>fWeaponWearMultiplier</code> | 武器总磨损倍率；缺失时默认为 1.0 |
-| <code>fArmorWearMultiplier</code> | 护甲总磨损倍率；缺失时默认为 1.0 |
-| <code>fRepairMaterialCostMultiplier</code> | 修理材料消耗倍率 |</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bRandomLootDurability</code></td>
+<td>新获得武器/护甲是否随机初始状况</td>
+</tr>
+<tr>
+<td><code>bEnableWeaponCondition</code></td>
+<td>武器耐久系统</td>
+</tr>
+<tr>
+<td><code>bEnableArmorCondition</code></td>
+<td>普通护甲耐久系统</td>
+</tr>
+<tr>
+<td><code>bEnableOverCondition</code></td>
+<td>是否允许超过 100%</td>
+</tr>
+<tr>
+<td><code>bDialogueFullDurability</code></td>
+<td>对话相关新物品是否保持满耐久</td>
+</tr>
+<tr>
+<td><code>fWeaponLootDurabilityMin/Max</code></td>
+<td>武器初始状况范围</td>
+</tr>
+<tr>
+<td><code>fArmorLootDurabilityMin/Max</code></td>
+<td>护甲初始状况范围</td>
+</tr>
+<tr>
+<td><code>fWeaponWearMultiplier</code></td>
+<td>武器总磨损倍率；缺失时默认为 1.0</td>
+</tr>
+<tr>
+<td><code>fArmorWearMultiplier</code></td>
+<td>护甲总磨损倍率；缺失时默认为 1.0</td>
+</tr>
+<tr>
+<td><code>fRepairMaterialCostMultiplier</code></td>
+<td>修理材料消耗倍率</td>
+</tr>
+</tbody>
+</table>
 <p>范围使用比例值，例如 <code>0.25</code> 表示 25%。</p>
 <h2>Mechanics：故障与过热</h2>
-<p>| 键 | 作用 |
-|---|---|
-| <code>fJamThreshold</code> | 低于该耐久比例后开始计算随机卡壳 |
-| <code>fMaxJamChance</code> | 最大卡壳概率 |
-| <code>bEnableEnergyFault</code> | 能量武器故障 |
-| <code>fEnergyFaultChanceMultiplier</code> | 射击阶段能量故障倍率 |
-| <code>fEnergyReloadFaultChanceMultiplier</code> | 换弹阶段能量故障倍率 |
-| <code>fEnergyFaultDuration</code> | 能量故障持续时间 |
-| <code>bEnableWeaponOverheat</code> | 过热系统 |
-| <code>fOverheatHeatPerShot</code> | 每次开火增加的基础热量 |
-| <code>fOverheatCooldownRate</code> | 停止射击后的冷却速度 |
-| <code>fOverheatRecoveryThreshold</code> | 过热状态恢复阈值 |
-| <code>fOverheatWearMultiplier</code> | 过热状态下的额外武器磨损倍率 |
-| <code>iJammingPhase</code> | <code>0</code> 射击卡壳，<code>1</code> 换弹卡壳 |
-| <code>bQuickUnjam</code> | 快速解除故障 |</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fJamThreshold</code></td>
+<td>低于该耐久比例后开始计算随机卡壳</td>
+</tr>
+<tr>
+<td><code>fMaxJamChance</code></td>
+<td>最大卡壳概率</td>
+</tr>
+<tr>
+<td><code>bEnableEnergyFault</code></td>
+<td>能量武器故障</td>
+</tr>
+<tr>
+<td><code>fEnergyFaultChanceMultiplier</code></td>
+<td>射击阶段能量故障倍率</td>
+</tr>
+<tr>
+<td><code>fEnergyReloadFaultChanceMultiplier</code></td>
+<td>换弹阶段能量故障倍率</td>
+</tr>
+<tr>
+<td><code>fEnergyFaultDuration</code></td>
+<td>能量故障持续时间</td>
+</tr>
+<tr>
+<td><code>bEnableWeaponOverheat</code></td>
+<td>过热系统</td>
+</tr>
+<tr>
+<td><code>fOverheatHeatPerShot</code></td>
+<td>每次开火增加的基础热量</td>
+</tr>
+<tr>
+<td><code>fOverheatCooldownRate</code></td>
+<td>停止射击后的冷却速度</td>
+</tr>
+<tr>
+<td><code>fOverheatRecoveryThreshold</code></td>
+<td>过热状态恢复阈值</td>
+</tr>
+<tr>
+<td><code>fOverheatWearMultiplier</code></td>
+<td>过热状态下的额外武器磨损倍率</td>
+</tr>
+<tr>
+<td><code>iJammingPhase</code></td>
+<td><code>0</code> 射击卡壳，<code>1</code> 换弹卡壳</td>
+</tr>
+<tr>
+<td><code>bQuickUnjam</code></td>
+<td>快速解除故障</td>
+</tr>
+</tbody>
+</table>
 <p>过热资格由武器 Profile 的 <code>mechanism</code> 和代码中的武器/弹药识别共同决定。单独修改弹药磨损 profile 不会把 10mm 手枪变成过热武器。</p>
 <h2>Mechanics：性能、修理和维修</h2>
-<p>| 键 | 作用 |
-|---|---|
-| <code>iDegradationMode</code> | <code>0</code> NV 阶梯性能衰减，<code>1</code> FO76 线性衰减 |
-| <code>fPenaltyThreshold</code> | 性能惩罚开始阈值 |
-| <code>fPenaltyMultMid</code> | 中段耐久性能倍率 |
-| <code>fPenaltyMultLow</code> | 低段耐久性能倍率 |
-| <code>fLinearMinMult</code> | 线性模式最低倍率 |
-| <code>bWeaponConditionAffectsDamage</code> | 武器耐久影响伤害 |
-| <code>bWeaponConditionAffectsValue</code> | 武器耐久影响价格 |
-| <code>bArmorConditionAffectsResistance</code> | 护甲耐久影响抗性 |
-| <code>bArmorConditionAffectsValue</code> | 护甲耐久影响价格 |
-| <code>iRepairMaterialMode</code> | 修理材料模式 |
-| <code>bDynamicRepairMaterialCost</code> | 动态材料消耗 |
-| <code>bEnablePipboyJuryRepair</code> | Pip-Boy 混修 |
-| <code>bEnableWorkbenchMaterialRepair</code> | 工作台材料修理 |
-| <code>bEnableRepairKits</code> | 修理包 |
-| <code>bConfirmConsumeFavoriteMaterial</code> | 消耗收藏材料前确认 |
-| <code>bConfirmConsumeLegendaryMaterial</code> | 消耗传奇材料前确认 |
-| <code>fJuryRepairCap</code> | Pip-Boy 混修方法上限 |
-| <code>fWorkbenchRepairCap</code> | 工作台方法上限 |</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>iDegradationMode</code></td>
+<td><code>0</code> NV 阶梯性能衰减，<code>1</code> FO76 线性衰减</td>
+</tr>
+<tr>
+<td><code>fPenaltyThreshold</code></td>
+<td>性能惩罚开始阈值</td>
+</tr>
+<tr>
+<td><code>fPenaltyMultMid</code></td>
+<td>中段耐久性能倍率</td>
+</tr>
+<tr>
+<td><code>fPenaltyMultLow</code></td>
+<td>低段耐久性能倍率</td>
+</tr>
+<tr>
+<td><code>fLinearMinMult</code></td>
+<td>线性模式最低倍率</td>
+</tr>
+<tr>
+<td><code>bWeaponConditionAffectsDamage</code></td>
+<td>武器耐久影响伤害</td>
+</tr>
+<tr>
+<td><code>bWeaponConditionAffectsValue</code></td>
+<td>武器耐久影响价格</td>
+</tr>
+<tr>
+<td><code>bArmorConditionAffectsResistance</code></td>
+<td>护甲耐久影响抗性</td>
+</tr>
+<tr>
+<td><code>bArmorConditionAffectsValue</code></td>
+<td>护甲耐久影响价格</td>
+</tr>
+<tr>
+<td><code>iRepairMaterialMode</code></td>
+<td>修理材料模式</td>
+</tr>
+<tr>
+<td><code>bDynamicRepairMaterialCost</code></td>
+<td>动态材料消耗</td>
+</tr>
+<tr>
+<td><code>bEnablePipboyJuryRepair</code></td>
+<td>Pip-Boy 混修</td>
+</tr>
+<tr>
+<td><code>bEnableWorkbenchMaterialRepair</code></td>
+<td>工作台材料修理</td>
+</tr>
+<tr>
+<td><code>bEnableRepairKits</code></td>
+<td>修理包</td>
+</tr>
+<tr>
+<td><code>bConfirmConsumeFavoriteMaterial</code></td>
+<td>消耗收藏材料前确认</td>
+</tr>
+<tr>
+<td><code>bConfirmConsumeLegendaryMaterial</code></td>
+<td>消耗传奇材料前确认</td>
+</tr>
+<tr>
+<td><code>fJuryRepairCap</code></td>
+<td>Pip-Boy 混修方法上限</td>
+</tr>
+<tr>
+<td><code>fWorkbenchRepairCap</code></td>
+<td>工作台方法上限</td>
+</tr>
+</tbody>
+</table>
 <p>维修最终上限还会经过 <code>Repair/OverRepair/</code> 中的技能档位，实际使用两者的较小值。</p>
 <h2>Debug</h2>
-<p>| 键 | 作用 |
-|---|---|
-| <code>bEnableLogging</code> | 写入 <code>ConditionSystemFramework.log</code> 的详细诊断日志 |</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bEnableLogging</code></td>
+<td>写入 <code>ConditionSystemFramework.log</code> 的详细诊断日志</td>
+</tr>
+</tbody>
+</table>
 <p>遇到 Provider 未选中、FormID 未解析、分类错误或技能未识别时，先开启该项，再完全重启游戏复现。日志比只看 MCM 页面更能区分“配置未加载”和“规则加载但条件未命中”。</p>
 
   </main>
